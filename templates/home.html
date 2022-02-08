@@ -68,17 +68,17 @@
                                 <a href="#">{{ post["name"] }}</a> Posted 
                             </div>
                             <div class="activity__list__body entry-content">
-                                {% if post["type"] == "image" %}
+                                {% if post["type"] == "image"%}
                                 <ul class="gallery">
                                     <li>
                                         <img src="{{ post['path'] }}" alt="" />
                                     </li>
                                 </ul>
-                                
-                                {% elif post["type"] == "video" %}
+                                {% endif %}
+                                {% if post["type"] == "video" %}
                                 <div class="row d-flex mx-auto">
                                     <video controls width="400" alt="">
-                                        <source src="{{ path['path'] }}" type="video/mp4">
+                                        <source src="{{ post['path'] }}" type="video/mp4">
                                     </video>
                                 </div>
                                 {% endif %}
@@ -90,7 +90,7 @@
                             </div>
                             <div class="activity__list__footer">
                                 <a href="#"> <i class="fa fa-thumbs-up"></i>{{ post["likes"] }}</a>
-                                <a href="#"> <i class="fa fa-comments"></i>23</a>
+                                <a href="#"> <i class="fa fa-comments"></i>{{ post["comments"] }}</a>
                                 <span> <i class="fa fa-clock"></i>{{ post["date"] }}</span>
                             </div>
                         </li>

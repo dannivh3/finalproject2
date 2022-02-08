@@ -172,6 +172,7 @@ def home():
         if request.files["image"]:
             print(" image before")
             image_content = request.files["image"]
+            print(request.files["image"])
             print(" image after")
         print("video statement before")
         if request.files["video"]:
@@ -212,7 +213,7 @@ def home():
             
         print("got through image content")
         # if there is something in the video input field
-        if video_content and allowed_file(video_content):
+        if video_content and allowed_file(video_content.filename):
             print("start of video content")
             # Create a filename, path for the upload and save the video
             filename = secure_filename(video_content.filename)
@@ -246,7 +247,7 @@ def home():
         print("got through text content")
         time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-
+        # Update the content columns of the post
         posts_id = db.execute("INSERT INTO posts (datetime, user_id) VALUES (?, ?)",time, userID)
         if images_id:
             db.execute("UPDATE posts SET image_id = ? WHERE id = ?", images_id, posts_id)
@@ -256,44 +257,70 @@ def home():
             db.execute("UPDATE posts SET stories_id = ? WHERE id = ?", stories_id, posts_id)
 
 
-        return render_template("home.html")
+        return redirect("/home")
     
+    # If request method is GET
     else:
-        allPosts = db.execute("SELECT * FROM posts WHERE user_id = ?", userID)
-        posts = []
-        for post in allPosts:
+        # Get posts that session user can see
+        allPosts = db.execute("SELECT * FROM posts WHERE user_id = ? ORDER BY datetime DESC", userID)
 
-            name = db.execute("SELECT name FROM users WHERE id = ?", post["user_id"])
-            likes = post["likes"]
+        # Setting the list where all post data will be kept
+        posts = []
+        
+        # Iterating through all the posts that user can see To gather info
+        for post in allPosts:
             
+            # Clear these variables otherwise they will bring up wrong data
+            postData = {}
+            mediaPath = None
+            mediaType = None
+           
+            # Name of poster
+            name = db.execute("SELECT name FROM users WHERE id = ?", post["user_id"])
+
+            # Likes and comments of post
+            likes = post["likes"]
+            comments = post["comments"]
+            # Date of post
             date = post["datetime"]
             
-            print(post)
-            if post["video_id"]:
+            # The website will only display eather 1 video or 1 image with or without text
+            # These statements will get the media file from the path collumn if there is one
+            
+            if post["video_id"] != None:
                 mediaPath = db.execute("SELECT path FROM videos WHERE id = ?", post["video_id"])
                 mediaType = db.execute("SELECT type FROM videos WHERE id = ?", post["video_id"])
-            if post["image_id"]:
+                mediaType = mediaType[0]["type"]
+                mediaPath = mediaPath[0]["path"]
+            if post["image_id"] != None:
                 mediaPath = db.execute("SELECT path FROM images WHERE id = ?", post["image_id"])
                 mediaType = db.execute("SELECT type FROM images WHERE id = ?", post["image_id"])
-            if post["stories_id"]:
+                mediaType = mediaType[0]["type"]
+                mediaPath = mediaPath[0]["path"]
+
+            # This statement will get the text file if there is one
+            if post["stories_id"] != None:
                 storyPath = db.execute("SELECT path FROM stories WHERE id = ?", post["stories_id"])
-                print(storyPath)
                 with open(storyPath[0]["path"], "r") as f:
                     text = f.read()
-                textType = ("SELECT type FROM type WHERE id = ?", post["stories_id"])
+                textType = db.execute("SELECT type FROM stories WHERE id = ?", post["stories_id"])
             else:
                 text = ""
-                textType = ""
+                textType = [""]
+
+            # Set up dict with all the data neccesery
             postData =  {
                             "name": name[0]["name"],
                             "likes": likes,
+                            "comments": comments,
                             "date": date,
-                            "path": mediaPath[0]["path"],
+                            "path": mediaPath,
                             "text": text,
-                            "type": mediaType[0]["type"],
+                            "type": mediaType,
                             "texttype": textType
                         }
+            # after each iteration append the data to posts
             posts.append(postData)
             
-            
+        # return the home template with posts arguement
         return render_template("home.html",posts=posts)
