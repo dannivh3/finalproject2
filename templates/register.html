@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+
+{% block title %}
+
+{% endblock %}
+
+{% block main %}
+<div class="mask d-flex align-items-center h-100 gradient-custom-3">
+    <div class="container h-100">
+        <div class="row d-flex justify-content-center align-items-center h-100">
+            <div class="col-11 col-md-8 col-lg-6 col-xl-5">
+                <div class="card" style="border-radius: 15px;">
+                    <div class="card-body p-5">
+                        <h2 class="text-uppercase text-center mb-5">Create an account</h2>
+                        {% if error %}<p class="text-danger">{{ error }}</p>{% endif %}
+                        <form action="/register" method="post">
+
+                            <div class="form-outline mb-4 mx-5">
+                                <input type="text" name="name" placeholder="Your Full Name" class="form-control form-control-lg" />
+                            </div>
+
+                            <div class="form-outline mb-4 mx-5">
+                                <input type="email" name="email" placeholder="Your Email Address" class="form-control form-control-lg" />
+                            </div>
+
+                            <div class="form-outline mb-4 mx-5">
+                                <input type="password" name="password" placeholder="Your Password" class="form-control form-control-lg" />
+                            </div>
+
+                            <div class="form-outline mb-4 mx-5">
+                                <input type="password" name="rpassword" placeholder="Repeat Your Password" class="form-control form-control-lg" />
+                            </div>
+
+                            <div class="form-check d-flex justify-content-center mb-5">
+                                <input class="form-check-input me-2" type="checkbox" name="terms" value="terms" id="form2Example3cg" />
+                                <label class="form-check-label" for="form2Example3g">
+                                    I agree all statements in <a href="#!" class="text-body"><u>Terms of service</u></a>
+                                </label>
+                            </div>
+
+                            <div class="d-flex justify-content-center">
+                                <input type="submit"
+                                    class="btn btn-primary btn-block btn-lg gradient-custom-4 text-body" value="Register"/>
+                            </div>
+
+                            <p class="text-center text-muted mt-5 mb-0">Already have an account? <a href="/login"
+                                    class="fw-bold text-body"><u>Login here</u></a></p>
+
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
