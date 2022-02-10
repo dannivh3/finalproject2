@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+{% block main %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div id="content" class="content content-full-width">
+                <div class="profile">
+                    <div class="profile-header">
+                    <!-- BEGIN profile-header-cover -->
+                    <div class="profile-header-cover"></div>
+                    <!-- END profile-header-cover -->
+                    <!-- BEGIN profile-header-content -->
+                    <div class="profile-header-content">
+                        <!-- BEGIN profile-header-img -->
+                        <div class="profile-header-img">
+                            <img src="{{profileData['profile_pic']}}" alt="Admin" class="rounded-circle" width="150"/>
+                        </div>
+                        <!-- END profile-header-img -->
+                        <!-- BEGIN profile-header-info -->
+                        <div class="profile-header-info">
+                            <h4 class="m-t-10 m-b-5">{{profileData['name']}}</h4>
+                            <p class="m-b-10">___________</p>
+                            <a href="/about" class="btn btn-sm btn-info mb-2">Edit Profile</a>
+                        </div>
+                        <!-- END profile-header-info -->
+                    </div>
+                    <!-- END profile-header-content -->
+                    <!-- BEGIN profile-header-tab -->
+                    <ul class="profile-header-tab nav nav-tabs">
+                        <li class="nav-item"><a href="/profile" class="nav-link active show" data-toggle="tab">POSTS</a></li>
+                        <li class="nav-item"><a href="/about" class="nav-link" data-toggle="tab">ABOUT</a></li>
+                        <li class="nav-item"><a href="/photos" class="nav-link" data-toggle="tab">PHOTOS</a></li>
+                        <li class="nav-item"><a href="/videos" class="nav-link" data-toggle="tab">VIDEOS</a></li>
+                        <li class="nav-item"><a href="/profile/friends" class="nav-link" data-toggle="tab">FRIENDS</a></li>
+                    </ul>
+                    <!-- END profile-header-tab -->
+                    </div>
+                </div>
+                <div class="profile-content">
+                    {% block profile %}
+                    {% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

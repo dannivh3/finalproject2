@@ -101,7 +101,9 @@ def register():
             flash("The passwords do not match","danger")
             error = True
         # Query database for existing user
+        
         row = db.execute("SELECT * FROM users WHERE email = ?", request.form.get("email"))
+
 
         # Check if email already in database
         if len(row) != 0:
@@ -120,20 +122,18 @@ def register():
         name = request.form.get("name")
         email = request.form.get("email")
         hash = generate_password_hash(request.form.get("password"))
-
-        # insert into database
-        db.execute("INSERT INTO users (name, email, hash) VALUES (?, ?, ?)", name, email, hash)
-
-        # Get user id
-        userID = db.execute("SELECT id FROM users WHERE email = ?", email)
-        userID = userID[0]["id"]
+        profile_pic = "static/web_img/empty_profile.png"
+        # insert into database & Get user id
+        userID = db.execute("INSERT INTO users (name, email, profile_pic, hash) VALUES (?, ?, ?, ?)", name, email, profile_pic, hash)
+        db.execute("INSERT INTO friend_list (user_id) VALUES (?)", userID)
+        db.execute("INSERT INTO about (user_id) VALUES (?)", userID)
 
         # Create a user dir
-        path = f"finalproject2/static/user_content/user_{userID}"
+        path = f"static/user_content/user_{userID}"
         Path(path).mkdir(parents=True)
-        path_img = path / "images"
-        path_vid = path / "videos"
-        path_sto = path / "stories"
+        path_img = path + "/images"
+        path_vid = path + "/videos"
+        path_sto = path + "/stories"
         Path(path_img).mkdir(parents=True)
         Path(path_vid).mkdir(parents=True)
         Path(path_sto).mkdir(parents=True)
@@ -277,7 +277,7 @@ def home():
            
             # Name of poster
             name = db.execute("SELECT name FROM users WHERE id = ?", post["user_id"])
-
+            profile = db.execute("SELECT profile_pic FROM users WHERE id = ?", post["user_id"])
             # Likes and comments of post
             likes = post["likes"]
             comments = post["comments"]
@@ -311,6 +311,7 @@ def home():
             # Set up dict with all the data neccesery
             postData =  {
                             "name": name[0]["name"],
+                            "profile": profile[0]["profile_pic"],
                             "likes": likes,
                             "comments": comments,
                             "date": date,
@@ -324,3 +325,242 @@ def home():
             
         # return the home template with posts arguement
         return render_template("home.html",posts=posts)
+
+
+@app.route("/profile", methods=["GET"])
+@login_required
+def profile():
+
+    userID = session["user_id"]
+    row = db.execute("SELECT * FROM users WHERE id = ?", userID)
+    profileData = {
+        "profile_pic": row[0]["profile_pic"],
+        "name": row[0]["name"]
+    }
+    
+    allPosts = db.execute(f"SELECT * FROM posts WHERE user_id = ? ORDER BY datetime DESC", userID)
+
+
+    # Setting the list where all post data will be kept
+    posts = []
+    
+    # Iterating through all the posts that user can see To gather info
+    for post in allPosts:
+                
+                # Clear these variables otherwise they will bring up wrong data
+                postData = {}
+                mediaPath = None
+                mediaType = None
+            
+                # Name of poster
+                name = db.execute("SELECT name FROM users WHERE id = ?", post["user_id"])
+                profile = db.execute("SELECT profile_pic FROM users WHERE id = ?", post["user_id"])
+                # Likes and comments of post
+                likes = post["likes"]
+                comments = post["comments"]
+                # Date of post
+                date = post["datetime"]
+                
+                # The website will only display eather 1 video or 1 image with or without text
+                # These statements will get the media file from the path collumn if there is one
+                
+                if post["video_id"] != None:
+                    mediaPath = db.execute("SELECT path FROM videos WHERE id = ?", post["video_id"])
+                    mediaType = db.execute("SELECT type FROM videos WHERE id = ?", post["video_id"])
+                    mediaType = mediaType[0]["type"]
+                    mediaPath = mediaPath[0]["path"]
+                if post["image_id"] != None:
+                    mediaPath = db.execute("SELECT path FROM images WHERE id = ?", post["image_id"])
+                    mediaType = db.execute("SELECT type FROM images WHERE id = ?", post["image_id"])
+                    mediaType = mediaType[0]["type"]
+                    mediaPath = mediaPath[0]["path"]
+
+                # This statement will get the text file if there is one
+                if post["stories_id"] != None:
+                    storyPath = db.execute("SELECT path FROM stories WHERE id = ?", post["stories_id"])
+                    with open(storyPath[0]["path"], "r") as f:
+                        text = f.read()
+                    textType = db.execute("SELECT type FROM stories WHERE id = ?", post["stories_id"])
+                else:
+                    text = ""
+                    textType = [""]
+
+                # Set up dict with all the data neccesery
+                postData =  {
+                                "name": name[0]["name"],
+                                "profile": profile[0]["profile_pic"],
+                                "likes": likes,
+                                "comments": comments,
+                                "date": date,
+                                "path": mediaPath,
+                                "text": text,
+                                "type": mediaType,
+                                "texttype": textType
+                            }
+                # after each iteration append the data to posts
+                posts.append(postData)
+    return render_template("profile.html",profileData=profileData, posts=posts)
+
+@app.route("/photos", methods=["GET"])
+@login_required
+def profilePhotos():
+
+    userID = session["user_id"]
+    row = db.execute("SELECT * FROM users WHERE id = ?", userID)
+    profileData = {
+        "profile_pic": row[0]["profile_pic"],
+        "name": row[0]["name"]
+    }
+    allImages = db.execute("SELECT path FROM images WHERE user_id = ?",userID)
+    images = []
+    for img in allImages:
+        images.append(img)
+        print(img)
+    print(images)
+    for i in images:
+        print(i['path'])
+
+
+    return render_template("profilephotos.html",images=images,profileData=profileData)
+
+@app.route("/videos", methods=["GET"])
+@login_required
+def profileVideos():
+
+    userID = session["user_id"]
+    row = db.execute("SELECT * FROM users WHERE id = ?", userID)
+    profileData = {
+        "profile_pic": row[0]["profile_pic"],
+        "name": row[0]["name"]
+    }
+    allVideos = db.execute("SELECT path FROM videos WHERE user_id = ?",userID)
+    videos = []
+    for vid in allVideos:
+        videos.append(vid)
+        
+    
+    
+
+
+    return render_template("profilevideos.html",videos=videos,profileData=profileData)
+
+@app.route("/about", methods=["GET","POST"])
+@login_required
+def profileAbout():
+
+    userID = session["user_id"]
+
+    if request.method == "POST":
+
+        
+        choice = request.form.get("profile")
+
+        db.execute("UPDATE users SET profile_pic = ? WHERE id = ?", choice, userID)
+
+        return redirect("/about")
+
+        
+
+
+    else:
+        
+        userRow = db.execute("SELECT * FROM users WHERE id = ?", userID)
+        aboutRow = db.execute("SELECT * FROM about WHERE user_id = ?", userID)
+        imageRow = db.execute("SELECT path FROM images WHERE user_id = ?",userID)
+        profile_pics = []
+        
+        
+        for img in imageRow:
+            print(img)
+            profile_pics.append(img["path"])
+         
+        about = {
+            "profile_pic": userRow[0]["profile_pic"],
+            "name": userRow[0]["name"],
+            "email": userRow[0]["email"],
+            "gender": aboutRow[0]["gender"],
+            "birthdate": aboutRow[0]["birthdate"],
+            "birthyear": aboutRow[0]["birthyear"],
+            "phone": aboutRow[0]["phone"],
+            "country_curr": aboutRow[0]["country_curr"],
+            "country_from": aboutRow[0]["country_from"],
+            "description": aboutRow[0]["description"]
+        }
+        profileData = {
+            "profile_pic": userRow[0]["profile_pic"],
+            "name": userRow[0]["name"]
+        }
+        return render_template("profileabout.html",about=about,profileData=profileData, profile_pics=profile_pics)
+
+@app.route("/settings", methods=["GET","POST"])
+@login_required
+def settings():
+    userID = session["user_id"]
+    
+    if request.method == "POST":
+        print("request type: ",request.form["edit"])
+        
+        print("beginning of Post")
+        if request.form["edit"] == "editPic":
+            print("begining og editPic")
+            choice = request.form.get("profile")
+
+            db.execute("UPDATE users SET profile_pic = ? WHERE id = ?", choice, userID)
+
+            return redirect("/about")
+        
+        elif request.form["edit"] == "editSettings":
+            print("begining og editPic")
+            if request.form.get("name") != "":
+                name = request.form.get("name")
+                db.execute("UPDATE users SET name = ? WHERE id = ?", name, userID)
+            if request.form.get("gender") != "":
+                gender = request.form.get("gender")
+                db.execute("UPDATE about SET gender = ? WHERE user_id = ?", gender, userID)
+            if request.form.get("birthdate") != "":
+                birthdate = request.form.get("birthdate")
+                db.execute("UPDATE about SET birthdate = ? WHERE user_id = ?", birthdate, userID)
+            if request.form.get("birthyear") != "":
+                birthyear = request.form.get("birthyear")
+                db.execute("UPDATE about SET birthyear = ? WHERE user_id = ?", int(birthyear), userID)
+            if request.form.get("phone") != "":
+                phone = request.form.get("phone")
+                db.execute("UPDATE about SET phone = ? WHERE user_id = ?", phone, userID)
+            if request.form.get("email") != "":
+                email = request.form.get("email")
+                db.execute("UPDATE users SET email = ? WHERE id = ?", email, userID)
+            if request.form.get("country_curr") != "":
+                country_curr = request.form.get("country_curr")
+                db.execute("UPDATE about SET country_curr = ? WHERE user_id = ?", country_curr, userID)
+            if request.form.get("country_from") != "":
+                country_from = request.form.get("country_from")
+                db.execute("UPDATE about SET country_from = ? WHERE user_id = ?", country_from, userID)
+
+        return redirect("/about")
+    else:
+        userRow = db.execute("SELECT * FROM users WHERE id = ?", userID)
+        aboutRow = db.execute("SELECT * FROM about WHERE user_id = ?", userID)
+        imageRow = db.execute("SELECT path FROM images WHERE user_id = ?",userID)
+
+        profile_pics = []     
+        for img in imageRow:
+            print(img)
+            profile_pics.append(img["path"])
+
+        about = {
+            "profile_pic": userRow[0]["profile_pic"],
+            "name": userRow[0]["name"],
+            "email": userRow[0]["email"],
+            "gender": aboutRow[0]["gender"],
+            "birthdate": aboutRow[0]["birthdate"],
+            "birthyear": aboutRow[0]["birthyear"],
+            "phone": aboutRow[0]["phone"],
+            "country_curr": aboutRow[0]["country_curr"],
+            "country_from": aboutRow[0]["country_from"],
+            "description": aboutRow[0]["description"]
+        }
+        profileData = {
+            "profile_pic": userRow[0]["profile_pic"],
+            "name": userRow[0]["name"]
+        }
+        return render_template("settings.html",about=about,profileData=profileData,profile_pics=profile_pics)

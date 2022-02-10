@@ -1,7 +1,43 @@
-{% extends "layout.html" %}
-
-{% block title %}Profile{% endblock %}
-
-{% block main %}
-
+{% extends "profilelayout.html" %} 
+{% block title %}Profile{% endblock %} 
+{% block profile %}
+<div class="profile-content" >
+  <div class="tab-content p-0">
+    <ul class="panel-activity__list">
+      {% for post in posts %}
+      <li class="white-box pt-4 ps-4">
+        <div class="activity__list__header">
+          <img src="{{ profileData['profile_pic'] }}" alt="" />
+          <a href="#">{{ profileData['name'] }}</a> Posted
+        </div>
+        <div class="activity__list__body entry-content">
+          <ul class="gallery">
+            {% if post["type"] == "image"%}
+            <li>
+              <img src="{{ post['path'] }}" alt="" />
+            </li>
+            {% endif %} {% if post["type"] == "video" %}
+            <li>
+              <video class="res-video" controls width="400" alt="" preload="metadata" >
+                <source src="{{ post['path'] }}" type="video/mp4" />
+              </video>
+            </li>
+            {% endif %}
+          </ul>
+          <div class="timeline-content">
+            <p class="m-4 ms-0 p-2 text-break">
+              <em>{{ post["text"] }}</em>
+            </p>
+          </div>
+        </div>
+        <div class="activity__list__footer">
+          <a href="#"> <i class="fa fa-thumbs-up"></i>{{ post["likes"] }}</a>
+          <a href="#"> <i class="fa fa-comments"></i>{{ post["comments"] }}</a>
+          <span> <i class="fa fa-clock"></i>{{ post["date"] }}</span>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
 {% endblock %}
