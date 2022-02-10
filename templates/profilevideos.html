@@ -1,0 +1,44 @@
+{% extends "profilelayout.html" %}
+
+{% block profile %}
+
+<div class="container">
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-2">
+        {% for vid in videos %}
+        <div class="col mt-3 border border-dark rounded mx-2">
+            
+            <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#target{{loop.index}}">
+                <video class="img-fluid" width="500" alt="" preload="metadata" >
+                    <source src="{{ vid['path'] }}#t=0.5" type="video/mp4">
+                </video>
+                
+                
+                </button>
+        </div>
+        <div class="modal fade" id="target{{loop.index}}" tabindex="-1" aria-labelledby="label{{loop.index}}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="label{{loop.index}}">Modal title</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <video class="img-fluid" controls width="1200" alt="" preload="metadata" >
+                        <source src="{{ vid['path'] }}#t=0.5" type="video/mp4">
+                    </video>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                  <button type="button" class="btn btn-primary">Save changes</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+
+    </div>
+</div>
+
+
+{% endblock %}
+

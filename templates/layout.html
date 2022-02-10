@@ -3,7 +3,7 @@
 <html lang="en">
 
     <head>
-
+        {% block head %}{% endblock %}
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -21,6 +21,7 @@
     </head>
 
     <body>
+        <div class="wrapper">
         
         <nav class="navbar navbar-expand navbar-dark bg-primary">
             <div class="container-fluid">
@@ -33,15 +34,11 @@
                 <div class="collapse navbar-collapse">
                 {% if session["user_id"] %}
                     <ul class="navbar-nav mr-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" href="/home">Home</a>
-                        </li>
+                        
                         <li class="nav-item">
                             <a class="nav-link" href="/profile">Profile</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/settings">Settings</a>
-                        </li>
+                        
                     </ul>
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item">
@@ -98,6 +95,6 @@
         <footer class="mb-5 small text-center text-muted">
             Website made by: Daniel Holm
         </footer>
-        
+    </div>
     </body>
 </html>
