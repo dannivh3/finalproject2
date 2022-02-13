@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% block main %}
+{% set userIDstr = session["user_id"]|string %}
 <div class="container">
     <div class="row">
         <div class="col-md-12">
@@ -13,22 +14,36 @@
                     <div class="profile-header-content">
                         <!-- BEGIN profile-header-img -->
                         <div class="profile-header-img">
-                            <img src="{{profileData['profile_pic']}}" alt="Admin" class="rounded-circle" width="150"/>
+                            <img src="{{url_for('static',filename=profileData['profile_pic'])}}" alt="Admin" class="rounded-circle" width="150"/>
                         </div>
                         <!-- END profile-header-img -->
                         <!-- BEGIN profile-header-info -->
                         <div class="profile-header-info">
                             <h4 class="m-t-10 m-b-5">{{profileData['name']}}</h4>
                             <p class="m-b-10">___________</p>
-                            <a href="/about" class="btn btn-sm btn-info mb-2">Edit Profile</a>
+
+                            {% if userIDstr == profileData["userID"] %}
+                                <a href="/about" class="btn btn-sm btn-info mb-2">Edit Profile</a>
+                            
+                            {% elif profileData["userID"] not in profileData['friends'] and userIDstr not in profileData['pFriends'] %}
+                                <form action="/profile/{{profileData['profile_page']}}/" method="post">
+                                    <input class="btn btn-sm btn-info mb-2" type="submit" name="friend-request" value="Add Friend"/>
+                                </form>
+                            {% elif userIDstr in profileData['pFriends'] and profileData["userID"] in profileData["pending"] %}
+                                <form action="/profile/{{profileData['profile_page']}}/" method="post">
+                                    <input class="btn btn-sm btn-info mb-2" type="submit" name="friend-request" value="Accept Friend Request"/>
+                                </form>
+                            {% else %}
+                                <button type="button" disabled class="btn btn-sm btn-info mb-2">Your Friend</button>
+                            {% endif %}
                         </div>
                         <!-- END profile-header-info -->
                     </div>
                     <!-- END profile-header-content -->
                     <!-- BEGIN profile-header-tab -->
                     <ul class="profile-header-tab nav nav-tabs">
-                        <li class="nav-item"><a href="/profile" class="nav-link active show" data-toggle="tab">POSTS</a></li>
-                        <li class="nav-item"><a href="/about" class="nav-link" data-toggle="tab">ABOUT</a></li>
+                        <li class="nav-item"><a href="/profile" cla="ssnav-link active show" data-toggle="tab">POSTS</a></li>
+                        <li class="nav-item"><a href="/{{profileData['profile_page']}}/about" class="nav-link" data-toggle="tab">ABOUT</a></li>
                         <li class="nav-item"><a href="/photos" class="nav-link" data-toggle="tab">PHOTOS</a></li>
                         <li class="nav-item"><a href="/videos" class="nav-link" data-toggle="tab">VIDEOS</a></li>
                         <li class="nav-item"><a href="/profile/friends" class="nav-link" data-toggle="tab">FRIENDS</a></li>
