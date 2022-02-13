@@ -33,14 +33,31 @@
             
                 <div class="collapse navbar-collapse">
                 {% if session["user_id"] %}
-                    <ul class="navbar-nav mr-auto">
-                        
-                        <li class="nav-item">
-                            <a class="nav-link" href="/profile">Profile</a>
+                    <ul> 
+                        <li>
+                            <a href="/profile/{{profileData['profile_page']}}">Profile</a>
                         </li>
-                        
                     </ul>
                     <ul class="navbar-nav ms-auto">
+                        <li class="nav-item" >
+                            <div class="btn-group">
+                                {% if pending %}
+                                    <button type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Notifications
+                                    </button>
+                                {% else %}
+                                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Notifications
+                                </button>
+                                {% endif %}
+                                <ul class="dropdown-menu">
+                                {% for friend in pending %}
+                                  <li><a class="dropdown-item" href="/profile/{{ friend['page'] }}"><img src="{{friend['pic']}}" width="20"/>{{ friend['name'] }}</a></li>
+                                {% endfor %}
+                                  
+                                </ul>
+                              </div>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/">Logout</a>
                         </li>

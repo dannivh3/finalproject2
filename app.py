@@ -122,10 +122,11 @@ def register():
         name = request.form.get("name")
         email = request.form.get("email")
         hash = generate_password_hash(request.form.get("password"))
-        profile_pic = "static/web_img/empty_profile.png"
+        profile_pic = "static/web_img/empty_profile.png" 
         # insert into database & Get user id
         userID = db.execute("INSERT INTO users (name, email, profile_pic, hash) VALUES (?, ?, ?, ?)", name, email, profile_pic, hash)
-        db.execute("INSERT INTO friend_list (user_id) VALUES (?)", userID)
+        db.execute("UPDATE users SET profile_page = ? WHERE id = ?", (name[:3]+str(userID)), userID)
+        db.execute("INSERT INTO friends (friends, user_id) VALUES (?,?)", userID, userID)
         db.execute("INSERT INTO about (user_id) VALUES (?)", userID)
 
         # Create a user dir
@@ -235,7 +236,7 @@ def home():
             purepath = f"{app.config['UPLOAD_FOLDER']}/user_{userID}/stories/{filename}"
             
             # Write text file
-            with open(purepath, 'x') as f:
+            with open(purepath, 'w') as f:
                 f.write(text_content)
 
             # Change type to string to query into database
@@ -261,91 +262,38 @@ def home():
     
     # If request method is GET
     else:
-        # Get posts that session user can see
-        allPosts = db.execute("SELECT * FROM posts WHERE user_id = ? ORDER BY datetime DESC", userID)
-
-        # Setting the list where all post data will be kept
+        
         posts = []
+        pending = []
+        friend_row = db.execute("SELECT * FROM friends WHERE user_id = ?", userID)
+        
+        split_friends = friend_row[0]["friends"].split(",")
+        try:
+            friend_requests = friend_row[0]["friends_pending"].split(",")
+            
+            for i,friend_request in enumerate(friend_requests):
+                if i == 0:
+                    continue
+                friend_request_row = db.execute("SELECT * FROM users WHERE id = ?",friend_request)
+                
+                friend_request_page = friend_request_row[0]["profile_page"]
+                friend_request_name = friend_request_row[0]["name"]
+                friend_request_pic = friend_request_row[0]["profile_pic"]
+                friendData = {  "friend_id": friend_requests,
+                                "page": friend_request_page,
+                                "name": friend_request_name,
+                                "pic": friend_request_pic  
+                            }
+            
+                pending.append(friendData)
+        except:
+            pass
+        
+        for friend_id in split_friends:
+            allPosts = db.execute("SELECT * FROM posts WHERE user_id = ? ORDER BY datetime DESC", friend_id)
         
         # Iterating through all the posts that user can see To gather info
-        for post in allPosts:
-            
-            # Clear these variables otherwise they will bring up wrong data
-            postData = {}
-            mediaPath = None
-            mediaType = None
-           
-            # Name of poster
-            name = db.execute("SELECT name FROM users WHERE id = ?", post["user_id"])
-            profile = db.execute("SELECT profile_pic FROM users WHERE id = ?", post["user_id"])
-            # Likes and comments of post
-            likes = post["likes"]
-            comments = post["comments"]
-            # Date of post
-            date = post["datetime"]
-            
-            # The website will only display eather 1 video or 1 image with or without text
-            # These statements will get the media file from the path collumn if there is one
-            
-            if post["video_id"] != None:
-                mediaPath = db.execute("SELECT path FROM videos WHERE id = ?", post["video_id"])
-                mediaType = db.execute("SELECT type FROM videos WHERE id = ?", post["video_id"])
-                mediaType = mediaType[0]["type"]
-                mediaPath = mediaPath[0]["path"]
-            if post["image_id"] != None:
-                mediaPath = db.execute("SELECT path FROM images WHERE id = ?", post["image_id"])
-                mediaType = db.execute("SELECT type FROM images WHERE id = ?", post["image_id"])
-                mediaType = mediaType[0]["type"]
-                mediaPath = mediaPath[0]["path"]
-
-            # This statement will get the text file if there is one
-            if post["stories_id"] != None:
-                storyPath = db.execute("SELECT path FROM stories WHERE id = ?", post["stories_id"])
-                with open(storyPath[0]["path"], "r") as f:
-                    text = f.read()
-                textType = db.execute("SELECT type FROM stories WHERE id = ?", post["stories_id"])
-            else:
-                text = ""
-                textType = [""]
-
-            # Set up dict with all the data neccesery
-            postData =  {
-                            "name": name[0]["name"],
-                            "profile": profile[0]["profile_pic"],
-                            "likes": likes,
-                            "comments": comments,
-                            "date": date,
-                            "path": mediaPath,
-                            "text": text,
-                            "type": mediaType,
-                            "texttype": textType
-                        }
-            # after each iteration append the data to posts
-            posts.append(postData)
-            
-        # return the home template with posts arguement
-        return render_template("home.html",posts=posts)
-
-
-@app.route("/profile", methods=["GET"])
-@login_required
-def profile():
-
-    userID = session["user_id"]
-    row = db.execute("SELECT * FROM users WHERE id = ?", userID)
-    profileData = {
-        "profile_pic": row[0]["profile_pic"],
-        "name": row[0]["name"]
-    }
-    
-    allPosts = db.execute(f"SELECT * FROM posts WHERE user_id = ? ORDER BY datetime DESC", userID)
-
-
-    # Setting the list where all post data will be kept
-    posts = []
-    
-    # Iterating through all the posts that user can see To gather info
-    for post in allPosts:
+            for post in allPosts:
                 
                 # Clear these variables otherwise they will bring up wrong data
                 postData = {}
@@ -354,12 +302,14 @@ def profile():
             
                 # Name of poster
                 name = db.execute("SELECT name FROM users WHERE id = ?", post["user_id"])
+                profile_page = db.execute("SELECT profile_page FROM users WHERE id = ?", post["user_id"])
                 profile = db.execute("SELECT profile_pic FROM users WHERE id = ?", post["user_id"])
                 # Likes and comments of post
                 likes = post["likes"]
                 comments = post["comments"]
                 # Date of post
                 date = post["datetime"]
+                
                 
                 # The website will only display eather 1 video or 1 image with or without text
                 # These statements will get the media file from the path collumn if there is one
@@ -387,6 +337,7 @@ def profile():
 
                 # Set up dict with all the data neccesery
                 postData =  {
+                                "profile_page": profile_page[0]["profile_page"],
                                 "name": name[0]["name"],
                                 "profile": profile[0]["profile_pic"],
                                 "likes": likes,
@@ -397,9 +348,16 @@ def profile():
                                 "type": mediaType,
                                 "texttype": textType
                             }
+        
+            
                 # after each iteration append the data to posts
                 posts.append(postData)
-    return render_template("profile.html",profileData=profileData, posts=posts)
+        row = db.execute("SELECT * FROM users WHERE id = ?", userID)
+        profileData = {"profile_page": row[0]["profile_page"]}
+        # return the home template with posts arguement
+        return render_template("home.html",posts=posts,pending=pending,profileData=profileData)
+
+
 
 @app.route("/photos", methods=["GET"])
 @login_required
@@ -444,53 +402,7 @@ def profileVideos():
 
     return render_template("profilevideos.html",videos=videos,profileData=profileData)
 
-@app.route("/about", methods=["GET","POST"])
-@login_required
-def profileAbout():
 
-    userID = session["user_id"]
-
-    if request.method == "POST":
-
-        
-        choice = request.form.get("profile")
-
-        db.execute("UPDATE users SET profile_pic = ? WHERE id = ?", choice, userID)
-
-        return redirect("/about")
-
-        
-
-
-    else:
-        
-        userRow = db.execute("SELECT * FROM users WHERE id = ?", userID)
-        aboutRow = db.execute("SELECT * FROM about WHERE user_id = ?", userID)
-        imageRow = db.execute("SELECT path FROM images WHERE user_id = ?",userID)
-        profile_pics = []
-        
-        
-        for img in imageRow:
-            print(img)
-            profile_pics.append(img["path"])
-         
-        about = {
-            "profile_pic": userRow[0]["profile_pic"],
-            "name": userRow[0]["name"],
-            "email": userRow[0]["email"],
-            "gender": aboutRow[0]["gender"],
-            "birthdate": aboutRow[0]["birthdate"],
-            "birthyear": aboutRow[0]["birthyear"],
-            "phone": aboutRow[0]["phone"],
-            "country_curr": aboutRow[0]["country_curr"],
-            "country_from": aboutRow[0]["country_from"],
-            "description": aboutRow[0]["description"]
-        }
-        profileData = {
-            "profile_pic": userRow[0]["profile_pic"],
-            "name": userRow[0]["name"]
-        }
-        return render_template("profileabout.html",about=about,profileData=profileData, profile_pics=profile_pics)
 
 @app.route("/settings", methods=["GET","POST"])
 @login_required
@@ -564,3 +476,153 @@ def settings():
             "name": userRow[0]["name"]
         }
         return render_template("settings.html",about=about,profileData=profileData,profile_pics=profile_pics)
+
+@app.route("/profile/")
+@app.route("/profile/<profile_page>", methods=["GET","POST"],strict_slashes=False)
+@login_required
+def userProfile(profile_page):
+
+    userID = session["user_id"]
+    row = db.execute("SELECT * FROM users WHERE profile_page = ?", profile_page)
+    
+    print(profile_page)
+    if request.method == "POST":
+        if request.form['friend-request'] == "Add Friend":
+
+            # Selecting the session user's friends
+            uFriendQ = db.execute("SELECT friends FROM friends WHERE user_id = ?", userID)
+            uFriendQ = uFriendQ[0]["friends"]
+            uFriendQ += f",{row[0]['id']}"
+
+            # Selecting the profile page user's friends_pending list
+            pFriendPendQ = db.execute("SELECT friends_pending FROM friends WHERE user_id = ?", row[0]['id'])
+            pFriendPendQ = pFriendPendQ[0]["friends_pending"]
+            pFriendPendQ += f",{userID}"
+            
+            # Updating Database
+            db.execute("UPDATE friends SET friends_pending = ? WHERE user_id = ?",pFriendPendQ,row[0]['id'])
+            db.execute("UPDATE friends SET friends = ? WHERE user_id = ?",uFriendQ, userID)
+
+            return redirect(f"/profile/{profile_page}")
+        if request.form['friend-request'] == "Accept Friend Request":
+            pendingList = db.execute("SELECT friends_pending FROM friends WHERE user_id = ?",userID)
+            pendingList = pendingList[0]["friends_pending"].split(",")
+            print(pendingList)
+            pendingList.pop(0)
+            print(pendingList)
+            acceptedFriend = db.execute("SELECT id FROM users WHERE profile_page = ?", profile_page)
+            acceptedFriend =acceptedFriend[0]["id"]
+            print(acceptedFriend)
+            pendingList.remove(str(acceptedFriend))
+            newPendingList = ""
+            print(pendingList)
+            for pendingFriend in pendingList:
+                print(pendingFriend)
+                newPendingList += f",{pendingFriend}"
+            db.execute("UPDATE friends SET friends_pending = ? WHERE user_id = ?", newPendingList, userID)
+            newFriendList = db.execute("SELECT friends FROM friends WHERE user_id = ?", userID)
+            newFriendList = newFriendList[0]["friends"]
+            newFriendList += f",{str(acceptedFriend)}"
+            db.execute("UPDATE friends SET friends = ? WHERE user_id = ?",newFriendList, userID)
+            return redirect(f"/profile/{profile_page}")
+    else:
+        profile_id = row[0]["id"]
+        friendRow = db.execute("SELECT * FROM friends WHERE user_id = ?", userID)
+        pFriendRow = db.execute("SELECT * FROM friends WHERE user_id = ?", profile_id)
+        
+        pFriends = pFriendRow[0]["friends"].split(",")
+        if pFriendRow[0]["friends_pending"]:
+            pPending = pFriendRow[0]["friends_pending"].split(",")
+        else:
+            pPending = None  
+        if friendRow[0]["friends_pending"]:
+            pending = friendRow[0]["friends_pending"].split(",")
+            pending.pop(0)
+        else:
+            pending = None
+        if friendRow[0]["friends"]:
+            friends = friendRow[0]["friends"].split(",")
+            friends.pop(0)
+        else:
+            friend = None
+        
+        print("user Friends:",friends)
+        print("user Pending:",pending)
+        print("Profile Friends:",pFriends)
+        print("Profile Pending:",pPending)
+        print("profile USer ID:",row[0]["id"])
+        profileData = {
+            "userID": str(row[0]["id"]),
+            "profile_page": row[0]["profile_page"],
+            "profile_pic": row[0]["profile_pic"][6:],
+            "name": row[0]["name"],
+            "friends": friends,
+            "pFriends":pFriends,
+            "pPending":pPending,
+            "pending":pending
+            
+        }
+        
+        allPosts = db.execute(f"SELECT * FROM posts WHERE user_id = ? ORDER BY datetime DESC", profile_id)
+
+
+        # Setting the list where all post data will be kept
+        posts = []
+        
+        # Iterating through all the posts that user can see To gather info
+        for post in allPosts:
+                    
+                    # Clear these variables otherwise they will bring up wrong data
+                    postData = {}
+                    mediaPath = None
+                    mediaType = None
+                
+                    # Name of poster
+                    name = db.execute("SELECT name FROM users WHERE id = ?", post["user_id"])
+                    profile = db.execute("SELECT profile_pic FROM users WHERE id = ?", post["user_id"])
+                    # Likes and comments of post
+                    likes = post["likes"]
+                    comments = post["comments"]
+                    # Date of post
+                    date = post["datetime"]
+                    
+                    # The website will only display eather 1 video or 1 image with or without text
+                    # These statements will get the media file from the path collumn if there is one
+                    
+                    if post["video_id"] != None:
+                        mediaPath = db.execute("SELECT path FROM videos WHERE id = ?", post["video_id"])
+                        mediaType = db.execute("SELECT type FROM videos WHERE id = ?", post["video_id"])
+                        mediaType = mediaType[0]["type"]
+                        mediaPath = mediaPath[0]["path"][6:]
+                    if post["image_id"] != None:
+                        mediaPath = db.execute("SELECT path FROM images WHERE id = ?", post["image_id"])
+                        mediaType = db.execute("SELECT type FROM images WHERE id = ?", post["image_id"])
+                        mediaType = mediaType[0]["type"]
+                        mediaPath = mediaPath[0]["path"][6:]
+
+
+                    # This statement will get the text file if there is one
+                    if post["stories_id"] != None:
+                        storyPath = db.execute("SELECT path FROM stories WHERE id = ?", post["stories_id"])
+                        with open(storyPath[0]["path"], "r") as f:
+                            text = f.read()
+                        textType = db.execute("SELECT type FROM stories WHERE id = ?", post["stories_id"])
+                    else:
+                        text = ""
+                        textType = [""]
+
+                    # Set up dict with all the data neccesery
+                    postData =  {
+                                    "name": name[0]["name"],
+                                    "profile": profile[0]["profile_pic"],
+                                    "likes": likes,
+                                    "comments": comments,
+                                    "date": date,
+                                    "path": mediaPath,
+                                    "text": text,
+                                    "type": mediaType,
+                                    "texttype": textType
+                                }
+                    # after each iteration append the data to posts
+                    posts.append(postData)
+        return render_template("profile.html",profileData=profileData, posts=posts)

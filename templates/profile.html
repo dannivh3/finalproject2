@@ -7,19 +7,20 @@
       {% for post in posts %}
       <li class="white-box pt-4 ps-4">
         <div class="activity__list__header">
-          <img src="{{ profileData['profile_pic'] }}" alt="" />
+          <img src="{{ url_for('static', filename=profileData['profile_pic']) }}" alt="" />
           <a href="#">{{ profileData['name'] }}</a> Posted
         </div>
         <div class="activity__list__body entry-content">
           <ul class="gallery">
             {% if post["type"] == "image"%}
             <li>
-              <img src="{{ post['path'] }}" alt="" />
+              <img src="{{ url_for('static', filename=post['path']) }}" alt="" />
             </li>
-            {% endif %} {% if post["type"] == "video" %}
+            {% endif %} 
+            {% if post["type"] == "video" %}
             <li>
               <video class="res-video" controls width="400" alt="" preload="metadata" >
-                <source src="{{ post['path'] }}" type="video/mp4" />
+                <source src="{{  url_for('static',filename=post['path']) }}" type="video/mp4" />
               </video>
             </li>
             {% endif %}
