@@ -1,6 +1,6 @@
 -- SQLite
-DROP TABLE videos;
-CREATE TABLE videos(
+DROP TABLE images;
+CREATE TABLE images(
     id INTEGER PRIMARY KEY,
     filename TEXT NOT NULL,
     path TEXT NOT NULL,
