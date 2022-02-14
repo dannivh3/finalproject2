@@ -4,30 +4,45 @@
 <div class="profile-content" >
   <div class="tab-content p-0">
     <ul class="panel-activity__list">
+
+      {% if posts %}
       {% for post in posts %}
+
       <li class="white-box pt-4 ps-4">
         <div class="activity__list__header">
-          <img src="{{ url_for('static', filename=profileData['profile_pic']) }}" alt="" />
+          <img src="{{ url_for('static', filename=profileData['pic']) }}" alt="" />
           <a href="#">{{ profileData['name'] }}</a> Posted
         </div>
         <div class="activity__list__body entry-content">
           <ul class="gallery">
+
             {% if post["type"] == "image"%}
+
             <li>
               <img src="{{ url_for('static', filename=post['path']) }}" alt="" />
             </li>
+
             {% endif %} 
             {% if post["type"] == "video" %}
+
             <li>
               <video class="res-video" controls width="400" alt="" preload="metadata" >
                 <source src="{{  url_for('static',filename=post['path']) }}" type="video/mp4" />
               </video>
             </li>
+
             {% endif %}
+
           </ul>
           <div class="timeline-content">
             <p class="m-4 ms-0 p-2 text-break">
+
+            {% if post['texttype'] %}
+
               <em>{{ post["text"] }}</em>
+              
+            {% endif %}
+
             </p>
           </div>
         </div>
@@ -38,6 +53,7 @@
         </div>
       </li>
       {% endfor %}
+      {% endif %}
     </ul>
   </div>
 </div>

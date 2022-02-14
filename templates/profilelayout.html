@@ -1,54 +1,56 @@
 {% extends "layout.html" %}
 {% block main %}
-{% set userIDstr = session["user_id"]|string %}
+
 <div class="container">
     <div class="row">
         <div class="col-md-12">
             <div id="content" class="content content-full-width">
                 <div class="profile">
                     <div class="profile-header">
-                    <!-- BEGIN profile-header-cover -->
+
                     <div class="profile-header-cover"></div>
-                    <!-- END profile-header-cover -->
-                    <!-- BEGIN profile-header-content -->
+
                     <div class="profile-header-content">
-                        <!-- BEGIN profile-header-img -->
+
                         <div class="profile-header-img">
-                            <img src="{{url_for('static',filename=profileData['profile_pic'])}}" alt="Admin" class="rounded-circle" width="150"/>
+                            <img src="{{ url_for('static',filename=profileData['pic']) }}" alt="Admin" class="rounded-circle" width="150"/>
                         </div>
-                        <!-- END profile-header-img -->
-                        <!-- BEGIN profile-header-info -->
+
                         <div class="profile-header-info">
                             <h4 class="m-t-10 m-b-5">{{profileData['name']}}</h4>
                             <p class="m-b-10">___________</p>
 
-                            {% if userIDstr == profileData["userID"] %}
-                                <a href="/about" class="btn btn-sm btn-info mb-2">Edit Profile</a>
-                            
-                            {% elif profileData["userID"] not in profileData['friends'] and userIDstr not in profileData['pFriends'] %}
-                                <form action="/profile/{{profileData['profile_page']}}/" method="post">
-                                    <input class="btn btn-sm btn-info mb-2" type="submit" name="friend-request" value="Add Friend"/>
+                            {% if userData['userID'] == profileData["userID"] %}
+
+                                <a href="/profile/{{ profileData['page'] }}/settings" class="btn btn-sm btn-info mb-2">Edit Profile</a>
+
+                            {% elif profileData['userIDstr'] in userData['pending'] %}
+
+                                <form action="/profile/{{profileData['page']}}/" method="post">
+                                    <input class="btn btn-sm btn-info mb-2" type="submit" name="friend_request" value="Accept Friend Request"/>
                                 </form>
-                            {% elif userIDstr in profileData['pFriends'] and profileData["userID"] in profileData["pending"] %}
-                                <form action="/profile/{{profileData['profile_page']}}/" method="post">
-                                    <input class="btn btn-sm btn-info mb-2" type="submit" name="friend-request" value="Accept Friend Request"/>
+                                                    
+                            {% elif userData['userIDstr'] not in profileData['friends'] and profileData['userIDstr'] not in userData['friends'] %}
+
+                                <form action="/profile/{{profileData['page']}}/" method="post">
+                                    <input class="btn btn-sm btn-info mb-2" type="submit" name="friend_request" value="Add Friend"/>
                                 </form>
+
                             {% else %}
+
                                 <button type="button" disabled class="btn btn-sm btn-info mb-2">Your Friend</button>
+
                             {% endif %}
                         </div>
-                        <!-- END profile-header-info -->
                     </div>
-                    <!-- END profile-header-content -->
-                    <!-- BEGIN profile-header-tab -->
                     <ul class="profile-header-tab nav nav-tabs">
-                        <li class="nav-item"><a href="/profile" cla="ssnav-link active show" data-toggle="tab">POSTS</a></li>
-                        <li class="nav-item"><a href="/{{profileData['profile_page']}}/about" class="nav-link" data-toggle="tab">ABOUT</a></li>
-                        <li class="nav-item"><a href="/photos" class="nav-link" data-toggle="tab">PHOTOS</a></li>
-                        <li class="nav-item"><a href="/videos" class="nav-link" data-toggle="tab">VIDEOS</a></li>
-                        <li class="nav-item"><a href="/profile/friends" class="nav-link" data-toggle="tab">FRIENDS</a></li>
+                        <li class="nav-item"><a href="/profile/{{profileData['page']}}/" cla="ssnav-link active show" data-toggle="tab">POSTS</a></li>
+                        <li class="nav-item"><a href="/profile/{{profileData['page']}}/settings" class="nav-link" data-toggle="tab">ABOUT</a></li>
+                        <li class="nav-item"><a href="/profile/{{profileData['page']}}/photos" class="nav-link" data-toggle="tab">PHOTOS</a></li>
+                        <li class="nav-item"><a href="/profile/{{profileData['page']}}/videos" class="nav-link" data-toggle="tab">VIDEOS</a></li>
+                        <li class="nav-item"><a href="/profile/{{profileData['page']}}/friends" class="nav-link" data-toggle="tab">FRIENDS</a></li>
                     </ul>
-                    <!-- END profile-header-tab -->
+
                     </div>
                 </div>
                 <div class="profile-content">

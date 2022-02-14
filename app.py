@@ -7,15 +7,12 @@ from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
-from helpers import login_required
+from helpers import login_required, listify, addToString, removeFromString, getPosts, getAllData, getUserData, getFriendsData, stringify, mediaFilter, textFilter
 from datetime import datetime
 
 # Create a paths
 PARENT = Path(__file__).parent.resolve()
 UPLOAD_FOLDER = "static/user_content" 
-
-# Some globals
-ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg','mp4'}
 
 # Configure application
 app = Flask(__name__)
@@ -33,7 +30,19 @@ Session(app)
 # Configure CS50 Library to use SQLite database
 db = SQL("sqlite:///finalproject2.db")
 
+# Some globals
+ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg','mp4'}
 
+
+# context_processor "https://flask.palletsprojects.com/en/1.1.x/templating/#context-processors"
+@app.context_processor
+def inject_user():
+    try:
+
+        userData = getAllData(db.execute("SELECT * FROM users WHERE id = ?",session['user_id']),db.execute("SELECT * FROM friends WHERE user_id = ?",session['user_id']))
+        return dict(userData=userData)
+    except:
+        return ""
 
 # Function to check if a file is allowed
 def allowed_file(filename):
@@ -67,8 +76,8 @@ def index():
         # Just in case something else goes wrong
         flash("Something went wrong, Try again","warning")
         return render_template("index.html")
-
-    return render_template("index.html")
+    else:
+        return render_template("index.html")
 
 # Register page
 @app.route("/register", methods=["GET", "POST"])
@@ -123,10 +132,11 @@ def register():
         email = request.form.get("email")
         hash = generate_password_hash(request.form.get("password"))
         profile_pic = "static/web_img/empty_profile.png" 
+
         # insert into database & Get user id
         userID = db.execute("INSERT INTO users (name, email, profile_pic, hash) VALUES (?, ?, ?, ?)", name, email, profile_pic, hash)
         db.execute("UPDATE users SET profile_page = ? WHERE id = ?", (name[:3]+str(userID)), userID)
-        db.execute("INSERT INTO friends (friends, user_id) VALUES (?,?)", userID, userID)
+        db.execute("INSERT INTO friends (friends, friends_pending, user_id) VALUES (?,?,?)", userID, "", userID)
         db.execute("INSERT INTO about (user_id) VALUES (?)", userID)
 
         # Create a user dir
@@ -149,6 +159,7 @@ def register():
 @app.route("/home", methods=["GET", "POST"])
 @login_required
 def home():
+    
 
     userID = session["user_id"]
 
@@ -262,153 +273,65 @@ def home():
     
     # If request method is GET
     else:
-        
+
+        # Query the friends table
+        friendsRow = db.execute("SELECT * FROM friends WHERE user_id = ?", userID)
+
+        # Get all the friend requests from user and put them in a list        
+        pendings = listify(friendsRow[0]["friends_pending"])
+
+        # append all information of each friend request to a list
+        notifications = []
+        for pending in pendings:
+            pendingData = getUserData(db.execute("SELECT * FROM users WHERE id = ?",pending))      
+            notifications.append(pendingData)
+    
+        # Get all posts from user's friends    
+        friends = listify(friendsRow[0]["friends"])
         posts = []
-        pending = []
-        friend_row = db.execute("SELECT * FROM friends WHERE user_id = ?", userID)
+        for friend in friends:
+            posts.append(getPosts(friend))
         
-        split_friends = friend_row[0]["friends"].split(",")
-        try:
-            friend_requests = friend_row[0]["friends_pending"].split(",")
-            
-            for i,friend_request in enumerate(friend_requests):
-                if i == 0:
-                    continue
-                friend_request_row = db.execute("SELECT * FROM users WHERE id = ?",friend_request)
-                
-                friend_request_page = friend_request_row[0]["profile_page"]
-                friend_request_name = friend_request_row[0]["name"]
-                friend_request_pic = friend_request_row[0]["profile_pic"]
-                friendData = {  "friend_id": friend_requests,
-                                "page": friend_request_page,
-                                "name": friend_request_name,
-                                "pic": friend_request_pic  
-                            }
-            
-                pending.append(friendData)
-        except:
-            pass
-        
-        for friend_id in split_friends:
-            allPosts = db.execute("SELECT * FROM posts WHERE user_id = ? ORDER BY datetime DESC", friend_id)
-        
-        # Iterating through all the posts that user can see To gather info
-            for post in allPosts:
-                
-                # Clear these variables otherwise they will bring up wrong data
-                postData = {}
-                mediaPath = None
-                mediaType = None
-            
-                # Name of poster
-                name = db.execute("SELECT name FROM users WHERE id = ?", post["user_id"])
-                profile_page = db.execute("SELECT profile_page FROM users WHERE id = ?", post["user_id"])
-                profile = db.execute("SELECT profile_pic FROM users WHERE id = ?", post["user_id"])
-                # Likes and comments of post
-                likes = post["likes"]
-                comments = post["comments"]
-                # Date of post
-                date = post["datetime"]
-                
-                
-                # The website will only display eather 1 video or 1 image with or without text
-                # These statements will get the media file from the path collumn if there is one
-                
-                if post["video_id"] != None:
-                    mediaPath = db.execute("SELECT path FROM videos WHERE id = ?", post["video_id"])
-                    mediaType = db.execute("SELECT type FROM videos WHERE id = ?", post["video_id"])
-                    mediaType = mediaType[0]["type"]
-                    mediaPath = mediaPath[0]["path"]
-                if post["image_id"] != None:
-                    mediaPath = db.execute("SELECT path FROM images WHERE id = ?", post["image_id"])
-                    mediaType = db.execute("SELECT type FROM images WHERE id = ?", post["image_id"])
-                    mediaType = mediaType[0]["type"]
-                    mediaPath = mediaPath[0]["path"]
+        # Get information from user
 
-                # This statement will get the text file if there is one
-                if post["stories_id"] != None:
-                    storyPath = db.execute("SELECT path FROM stories WHERE id = ?", post["stories_id"])
-                    with open(storyPath[0]["path"], "r") as f:
-                        text = f.read()
-                    textType = db.execute("SELECT type FROM stories WHERE id = ?", post["stories_id"])
-                else:
-                    text = ""
-                    textType = [""]
-
-                # Set up dict with all the data neccesery
-                postData =  {
-                                "profile_page": profile_page[0]["profile_page"],
-                                "name": name[0]["name"],
-                                "profile": profile[0]["profile_pic"],
-                                "likes": likes,
-                                "comments": comments,
-                                "date": date,
-                                "path": mediaPath,
-                                "text": text,
-                                "type": mediaType,
-                                "texttype": textType
-                            }
-        
-            
-                # after each iteration append the data to posts
-                posts.append(postData)
-        row = db.execute("SELECT * FROM users WHERE id = ?", userID)
-        profileData = {"profile_page": row[0]["profile_page"]}
         # return the home template with posts arguement
-        return render_template("home.html",posts=posts,pending=pending,profileData=profileData)
+        return render_template("home.html",posts=posts,notifications=notifications)
 
 
 
-@app.route("/photos", methods=["GET"])
+@app.route("/profile/<profile_page>/photos", methods=["GET"])
 @login_required
-def profilePhotos():
+def profilePhotos(profile_page):
 
-    userID = session["user_id"]
-    row = db.execute("SELECT * FROM users WHERE id = ?", userID)
-    profileData = {
-        "profile_pic": row[0]["profile_pic"],
-        "name": row[0]["name"]
-    }
-    allImages = db.execute("SELECT path FROM images WHERE user_id = ?",userID)
+    profileData = getUserData(db.execute("SELECT * FROM users WHERE profile_page = ?", profile_page))
+    allImages = db.execute("SELECT path FROM images WHERE user_id = ?",profileData['userID'])
+
     images = []
     for img in allImages:
-        images.append(img)
-        print(img)
-    print(images)
-    for i in images:
-        print(i['path'])
+        images.append(img['path'][6:])
+    return render_template("photos.html",images=images,profileData=profileData)
 
-
-    return render_template("profilephotos.html",images=images,profileData=profileData)
-
-@app.route("/videos", methods=["GET"])
+@app.route("/profile/<profile_page>/videos", methods=["GET"])
 @login_required
-def profileVideos():
+def profileVideos(profile_page):
 
-    userID = session["user_id"]
-    row = db.execute("SELECT * FROM users WHERE id = ?", userID)
-    profileData = {
-        "profile_pic": row[0]["profile_pic"],
-        "name": row[0]["name"]
-    }
-    allVideos = db.execute("SELECT path FROM videos WHERE user_id = ?",userID)
+    profileData = getUserData(db.execute("SELECT * FROM users WHERE profile_page = ?", profile_page))
+    allVideos = db.execute("SELECT path FROM videos WHERE user_id = ?",profileData['userID'])
+
     videos = []
     for vid in allVideos:
-        videos.append(vid)
-        
-    
-    
-
-
-    return render_template("profilevideos.html",videos=videos,profileData=profileData)
+        videos.append(vid['path'][6:])
+    return render_template("videos.html",videos=videos,profileData=profileData)
 
 
 
-@app.route("/settings", methods=["GET","POST"])
+@app.route("/profile/<profile_page>/settings", methods=["GET","POST"], strict_slashes=False)
 @login_required
-def settings():
+def settings(profile_page):
+
     userID = session["user_id"]
-    
+    profileData = getUserData(db.execute("SELECT * FROM users WHERE profile_page = ?",profile_page))
+
     if request.method == "POST":
         print("request type: ",request.form["edit"])
         
@@ -416,13 +339,12 @@ def settings():
         if request.form["edit"] == "editPic":
             print("begining og editPic")
             choice = request.form.get("profile")
+            print("newProfile: ",choice)
+            db.execute("UPDATE users SET profile_pic = ? WHERE id = ?", f"static{choice}", userID)
 
-            db.execute("UPDATE users SET profile_pic = ? WHERE id = ?", choice, userID)
-
-            return redirect("/about")
+            return redirect(f"/profile/{profileData['page']}/settings")
         
         elif request.form["edit"] == "editSettings":
-            print("begining og editPic")
             if request.form.get("name") != "":
                 name = request.form.get("name")
                 db.execute("UPDATE users SET name = ? WHERE id = ?", name, userID)
@@ -444,185 +366,96 @@ def settings():
             if request.form.get("country_curr") != "":
                 country_curr = request.form.get("country_curr")
                 db.execute("UPDATE about SET country_curr = ? WHERE user_id = ?", country_curr, userID)
-            if request.form.get("country_from") != "":
-                country_from = request.form.get("country_from")
-                db.execute("UPDATE about SET country_from = ? WHERE user_id = ?", country_from, userID)
+            if request.form.get("contry_from") != "":
+                country_from = request.form.get("contry_from")
+                db.execute("UPDATE about SET contry_from = ? WHERE user_id = ?", country_from, userID)
 
-        return redirect("/about")
+        return redirect(f"/profile/{profileData['page']}/settings")
     else:
-        userRow = db.execute("SELECT * FROM users WHERE id = ?", userID)
-        aboutRow = db.execute("SELECT * FROM about WHERE user_id = ?", userID)
-        imageRow = db.execute("SELECT path FROM images WHERE user_id = ?",userID)
+        profileFriends = getFriendsData(db.execute("SELECT * FROM friends WHERE user_id = ?", profileData["userID"]))
+        userFriends = getFriendsData(db.execute("SELECT * FROM friends WHERE user_id = ?", userID))
+        aboutRow = db.execute("SELECT * FROM about WHERE user_id = ?", profileData['userID'])
+        imageRow = db.execute("SELECT path FROM images WHERE user_id = ?",profileData['userID'])
+
 
         profile_pics = []     
         for img in imageRow:
             print(img)
-            profile_pics.append(img["path"])
+            profile_pics.append(img["path"][6:])
 
         about = {
-            "profile_pic": userRow[0]["profile_pic"],
-            "name": userRow[0]["name"],
-            "email": userRow[0]["email"],
+            "pic": profileData["pic"],
+            "name": profileData["name"],
+            "email": profileData["email"],
             "gender": aboutRow[0]["gender"],
             "birthdate": aboutRow[0]["birthdate"],
             "birthyear": aboutRow[0]["birthyear"],
             "phone": aboutRow[0]["phone"],
             "country_curr": aboutRow[0]["country_curr"],
-            "country_from": aboutRow[0]["country_from"],
+            "country_from": aboutRow[0]["contry_from"],
             "description": aboutRow[0]["description"]
         }
-        profileData = {
-            "profile_pic": userRow[0]["profile_pic"],
-            "name": userRow[0]["name"]
-        }
-        return render_template("settings.html",about=about,profileData=profileData,profile_pics=profile_pics)
+        
+        return render_template("settings.html",about=about,profileData=profileData,profile_pics=profile_pics,profileFriends=profileFriends,userFriends=userFriends)
 
 @app.route("/profile/")
-@app.route("/profile/<profile_page>", methods=["GET","POST"],strict_slashes=False)
+@app.route("/profile/<profile_page>/", methods=["GET","POST"],strict_slashes=False)
 @login_required
 def userProfile(profile_page):
 
+    # Get vitals
+    profileRow = db.execute("SELECT * FROM users WHERE profile_page = ?", profile_page)
+    profileID = profileRow[0]["id"]
     userID = session["user_id"]
-    row = db.execute("SELECT * FROM users WHERE profile_page = ?", profile_page)
+    userRow = db.execute("SELECT * FROM users WHERE id = ?", userID)
     
     print(profile_page)
     if request.method == "POST":
-        if request.form['friend-request'] == "Add Friend":
+        if request.form['friend_request'] == "Add Friend":
 
             # Selecting the session user's friends
-            uFriendQ = db.execute("SELECT friends FROM friends WHERE user_id = ?", userID)
-            uFriendQ = uFriendQ[0]["friends"]
-            uFriendQ += f",{row[0]['id']}"
-
+            userFriendQuery = db.execute("SELECT friends FROM friends WHERE user_id = ?", userID)
+            userFriend = addToString(userFriendQuery[0]["friends"],profileID)
+            
             # Selecting the profile page user's friends_pending list
-            pFriendPendQ = db.execute("SELECT friends_pending FROM friends WHERE user_id = ?", row[0]['id'])
-            pFriendPendQ = pFriendPendQ[0]["friends_pending"]
-            pFriendPendQ += f",{userID}"
+            profileFriendPendingQuery = db.execute("SELECT friends_pending FROM friends WHERE user_id = ?", profileID)
+            profileFriendPending = addToString(profileFriendPendingQuery[0]["friends_pending"],userID)
             
             # Updating Database
-            db.execute("UPDATE friends SET friends_pending = ? WHERE user_id = ?",pFriendPendQ,row[0]['id'])
-            db.execute("UPDATE friends SET friends = ? WHERE user_id = ?",uFriendQ, userID)
+            db.execute("UPDATE friends SET friends_pending = ? WHERE user_id = ?",profileFriendPending,profileID)
+            db.execute("UPDATE friends SET friends = ? WHERE user_id = ?",userFriend, userID)
 
-            return redirect(f"/profile/{profile_page}")
-        if request.form['friend-request'] == "Accept Friend Request":
-            pendingList = db.execute("SELECT friends_pending FROM friends WHERE user_id = ?",userID)
-            pendingList = pendingList[0]["friends_pending"].split(",")
-            print(pendingList)
-            pendingList.pop(0)
-            print(pendingList)
+            return redirect(f"/profile/{profile_page}/")
+
+        # If a user clicks on a button of a user that friend requested him
+        if request.form['friend_request'] == "Accept Friend Request":
+
+            # Get the id of the profile page owner
             acceptedFriend = db.execute("SELECT id FROM users WHERE profile_page = ?", profile_page)
-            acceptedFriend =acceptedFriend[0]["id"]
-            print(acceptedFriend)
-            pendingList.remove(str(acceptedFriend))
-            newPendingList = ""
-            print(pendingList)
-            for pendingFriend in pendingList:
-                print(pendingFriend)
-                newPendingList += f",{pendingFriend}"
+            acceptedFriend = acceptedFriend[0]["id"]
+
+            # Get the pending friends from user and remove the acceptedFriend
+            pendingFriendsQuery = db.execute("SELECT friends_pending FROM friends WHERE user_id = ?",userID)
+            newPendingList = removeFromString(pendingFriendsQuery[0]["friends_pending"],acceptedFriend)
+
+            # Update the pending list with the accepted friend removed
             db.execute("UPDATE friends SET friends_pending = ? WHERE user_id = ?", newPendingList, userID)
-            newFriendList = db.execute("SELECT friends FROM friends WHERE user_id = ?", userID)
-            newFriendList = newFriendList[0]["friends"]
-            newFriendList += f",{str(acceptedFriend)}"
+
+            # Get friends from user and add acceptedFriend to friends
+            newFriendListQuery = db.execute("SELECT friends FROM friends WHERE user_id = ?", userID)
+            newFriendList = addToString(newFriendListQuery[0]["friends"],acceptedFriend)
+
+            # Update the friends column of the user
             db.execute("UPDATE friends SET friends = ? WHERE user_id = ?",newFriendList, userID)
-            return redirect(f"/profile/{profile_page}")
+
+            # Reload page
+            return redirect(f"/profile/{profile_page}/")
     else:
-        profile_id = row[0]["id"]
-        friendRow = db.execute("SELECT * FROM friends WHERE user_id = ?", userID)
-        pFriendRow = db.execute("SELECT * FROM friends WHERE user_id = ?", profile_id)
         
-        pFriends = pFriendRow[0]["friends"].split(",")
-        if pFriendRow[0]["friends_pending"]:
-            pPending = pFriendRow[0]["friends_pending"].split(",")
-        else:
-            pPending = None  
-        if friendRow[0]["friends_pending"]:
-            pending = friendRow[0]["friends_pending"].split(",")
-            pending.pop(0)
-        else:
-            pending = None
-        if friendRow[0]["friends"]:
-            friends = friendRow[0]["friends"].split(",")
-            friends.pop(0)
-        else:
-            friend = None
-        
-        print("user Friends:",friends)
-        print("user Pending:",pending)
-        print("Profile Friends:",pFriends)
-        print("Profile Pending:",pPending)
-        print("profile USer ID:",row[0]["id"])
-        profileData = {
-            "userID": str(row[0]["id"]),
-            "profile_page": row[0]["profile_page"],
-            "profile_pic": row[0]["profile_pic"][6:],
-            "name": row[0]["name"],
-            "friends": friends,
-            "pFriends":pFriends,
-            "pPending":pPending,
-            "pending":pending
-            
-        }
-        
-        allPosts = db.execute(f"SELECT * FROM posts WHERE user_id = ? ORDER BY datetime DESC", profile_id)
+        # Get all information that will be sent to url
+        profileData = getAllData(profileRow, db.execute("SELECT * FROM friends WHERE user_id = ?", profileID))
+        print(profileData["pic"])
+        # Get all posts from profile
+        posts = getPosts(profileID)
 
-
-        # Setting the list where all post data will be kept
-        posts = []
-        
-        # Iterating through all the posts that user can see To gather info
-        for post in allPosts:
-                    
-                    # Clear these variables otherwise they will bring up wrong data
-                    postData = {}
-                    mediaPath = None
-                    mediaType = None
-                
-                    # Name of poster
-                    name = db.execute("SELECT name FROM users WHERE id = ?", post["user_id"])
-                    profile = db.execute("SELECT profile_pic FROM users WHERE id = ?", post["user_id"])
-                    # Likes and comments of post
-                    likes = post["likes"]
-                    comments = post["comments"]
-                    # Date of post
-                    date = post["datetime"]
-                    
-                    # The website will only display eather 1 video or 1 image with or without text
-                    # These statements will get the media file from the path collumn if there is one
-                    
-                    if post["video_id"] != None:
-                        mediaPath = db.execute("SELECT path FROM videos WHERE id = ?", post["video_id"])
-                        mediaType = db.execute("SELECT type FROM videos WHERE id = ?", post["video_id"])
-                        mediaType = mediaType[0]["type"]
-                        mediaPath = mediaPath[0]["path"][6:]
-                    if post["image_id"] != None:
-                        mediaPath = db.execute("SELECT path FROM images WHERE id = ?", post["image_id"])
-                        mediaType = db.execute("SELECT type FROM images WHERE id = ?", post["image_id"])
-                        mediaType = mediaType[0]["type"]
-                        mediaPath = mediaPath[0]["path"][6:]
-
-
-                    # This statement will get the text file if there is one
-                    if post["stories_id"] != None:
-                        storyPath = db.execute("SELECT path FROM stories WHERE id = ?", post["stories_id"])
-                        with open(storyPath[0]["path"], "r") as f:
-                            text = f.read()
-                        textType = db.execute("SELECT type FROM stories WHERE id = ?", post["stories_id"])
-                    else:
-                        text = ""
-                        textType = [""]
-
-                    # Set up dict with all the data neccesery
-                    postData =  {
-                                    "name": name[0]["name"],
-                                    "profile": profile[0]["profile_pic"],
-                                    "likes": likes,
-                                    "comments": comments,
-                                    "date": date,
-                                    "path": mediaPath,
-                                    "text": text,
-                                    "type": mediaType,
-                                    "texttype": textType
-                                }
-                    # after each iteration append the data to posts
-                    posts.append(postData)
         return render_template("profile.html",profileData=profileData, posts=posts)

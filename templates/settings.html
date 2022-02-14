@@ -7,14 +7,16 @@
       <div class="card">
         <div class="card-body">
           <div class="d-flex flex-column align-items-center text-center">
-            <img src="{{about['profile_pic']}}" alt="Admin" class="rounded-circle" width="150">
+            <img src="{{ url_for('static',filename=about['pic']) }}" alt="Admin" class="rounded-circle" width="150">
             <div class="mt-3">
               <h4>{{about['name']}}</h4>
               <h6 class="mb-0">Bio</h6>
               <p class="text-secondary mb-1">{{about['description']}}</p>
               
-              <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#changeProfilePic">Change Profile Picture</button>
-              
+              {% if userData['userID'] == profileData['userID'] %}
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#changeProfilePic">Change Profile Picture</button>
+              {% endif %}
+
             </div>
           </div>
         </div>
@@ -23,10 +25,10 @@
     </div>
 
 <div class="col-md-8">
-        
+    {% if userData['userID'] == profileData['userID'] %}
     <div class="card mb-3">
       <div class="card-body">
-          <form action="/settings" method="post">
+          <form action="/profile/{{profileData['page']}}/settings" method="post">
         <div class="row">
           <div class="col-sm-3">
             <h6 class="mb-0">Full Name</h6>
@@ -108,8 +110,90 @@
           
         </div>
         </form>
+
       </div>
     </div>
+    {% else %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-sm-3">
+            <h6 class="mb-0">Full Name</h6>
+          </div>
+          <div class="col-sm-9 text-secondary">
+            {{about['name']}}
+          </div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-sm-3">
+            <h6 class="mb-0">Gender</h6>
+          </div>
+          <div class="col-sm-9 text-secondary">
+            {{about['gender']}}
+          </div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-sm-3">
+            <h6 class="mb-0">Birthdate</h6>
+          </div>
+          <div class="col-sm-9 text-secondary">
+            {{about['birthdate']}}
+          </div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-sm-3">
+            <h6 class="mb-0">Birthyear</h6>
+          </div>
+          <div class="col-sm-9 text-secondary">
+            {{about['birthyear']}}
+          </div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-sm-3">
+            <h6 class="mb-0">Phone</h6>
+          </div>
+          <div class="col-sm-9 text-secondary">
+            {{about['phone']}}
+          </div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-sm-3">
+            <h6 class="mb-0">Email</h6>
+          </div>
+          <div class="col-sm-9 text-secondary">
+            {{about['email']}}
+          </div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-sm-3">
+            <h6 class="mb-0">Lives</h6>
+          </div>
+          <div class="col-sm-9 text-secondary">
+            {{about['country_curr']}}
+          </div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-sm-3">
+            <h6 class="mb-0">Born in</h6>
+          </div>
+          <div class="col-sm-9 text-secondary">
+            {{about['country_from']}}
+          </div>
+        </div>
+        <hr>
+
+        
+      </div>
+    </div>
+    {% endif %}
+
     </div>
     </div>
     <div class="modal fade" id="changeProfilePic" tabindex="-1" aria-labelledby="changeProfileLabel" aria-hidden="true">
@@ -120,11 +204,11 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form action="/about" method="post">
+                <form action="/profile/{{profileData['page']}}/settings" method="post">
                 
                     {% for p in profile_pics %}
                         <input type="radio" class="radio" name="profile" id="{{loop.index}}" value="{{p}}"/>
-                        <label for="{{loop.index}}" class="label" style="background-image: url('{{p}}')">Example 1</label>
+                        <label for="{{loop.index}}" class="label" style="background-image: url( {{url_for('static', filename=p) }} )">Example 1</label>
                     {% endfor %}
                     </div>
                     <div class="modal-footer">
