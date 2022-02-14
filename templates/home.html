@@ -66,34 +66,44 @@
 
                     <div class="tab-content p-0">
                         <ul class="panel-activity__list">
+                            {% if posts %}
                             {% for post in posts %}
-                            <li class="white-box p-4">
 
+                            <li class="white-box p-4">
                                 <div class="activity__list__header">
-                                    <img src="{{ post['profile'] }}" alt="" />
-                                    <a href="/profile/{{ post['profile_page'] }}">{{ post["name"] }}</a> Posted
+                                    <img src="{{ post['pic'] }}" alt="" />
+                                    <a href="/profile/{{ post['page'] }}">{{ post["name"] }}</a> Posted
                                 </div>
                                 <div class="activity__list__body entry-content">
 
                                     <ul class="gallery">
+
                                         {% if post["type"] == "image"%}
+
                                         <li>
                                             <img src="{{ post['path'] }}" alt="" />
                                         </li>
+
                                         {% endif %}
-
-
                                         {% if post["type"] == "video" %}
+
                                         <li>
                                             <video class="res-video" controls width="400" alt="">
                                                 <source src="{{ post['path'] }}" type="video/mp4" preload="metadata" >
                                             </video>
                                         </li>
+
                                         {% endif %}
                                     </ul>
                                     <div class="timeline-content">
                                         <p class="m-4 ms-0 p-2 text-break">
+
+                                            {% if post['texttype'] %}
+
                                             {{ post["text"] }}</em>
+
+                                            {% endif %}
+
                                         </p>
                                     </div>
 
@@ -105,6 +115,7 @@
                                 </div>
                             </li>
                             {% endfor %}
+                            {% endif %}
 
 
 
