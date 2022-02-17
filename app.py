@@ -4,11 +4,11 @@ from pathlib import Path
 from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
-from tempfile import mkdtemp
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 from helpers import login_required, listify, addToString, removeFromString, getPosts, getAllData, getUserData, getFriendsData, stringify, mediaFilter, textFilter
 from datetime import datetime
+
 
 # Create a paths
 PARENT = Path(__file__).parent.resolve()
@@ -165,13 +165,13 @@ def home():
 
     # Need to set content to null
     text_content = None
-    image_content = None
-    video_content = None
+    media_content = None
 
-    images_id = None
-    videos_id = None
+    images_id_list = []
+    videos_id_list = []
     stories_id = None
 
+    
 
     if request.method == "POST":
         print("Text statement before")
@@ -180,65 +180,48 @@ def home():
             print(" text before")
             text_content = request.form.get("text")
             print(" text after")
-        print("image statement before")
-        if request.files["image"]:
+        print("files: ", request.files.getlist("media"))
+        if request.files["media"]:
             print(" image before")
-            image_content = request.files["image"]
-            print(request.files["image"])
+            media_content = request.files.getlist("media")
+            print(request.files["media"])
             print(" image after")
-        print("video statement before")
-        if request.files["video"]:
-            print(" video before")
-            video_content = request.files["video"]
-            print(" video after")
-        print("after something in form")
-
+        
         # If there is nothing in all input fields it will return error
-        if image_content == None and video_content == None and text_content == None:
+        if media_content == None and text_content == None:
             flash("There is nothing to post","danger")
             return render_template("home.html")
-        if image_content != None and video_content != None:
-            flash("You cant post both videos and images","danger")
-            return render_template("home.html")
         print("got through nothing content")
-        print(image_content)
-        # if there is something in the image input field
-        if image_content and allowed_file(image_content.filename):
-            
-            print("start of image content")
-            # Create a filename, path for the upload and save the image
-            filename = secure_filename(image_content.filename)
-           
-            purepath = f"{app.config['UPLOAD_FOLDER']}/user_{userID}/images/{filename}"
-            image_content.save(purepath)
-
-            # Change type to string to query into database
-            purepath = str(purepath)
-
-            print("filename: ",filename, type(filename))
-            print("purepath: ",purepath, type(purepath))
-
-            # Query image into database and get id
-            images_id = db.execute("INSERT INTO images (filename, path, type, user_id) VALUES(?, ?, ?, ?)", filename, purepath, "image", userID)
-            
+        if media_content != None:
+            for media in media_content:
+                if media and allowed_file(media.filename):
+                    filename = secure_filename(media.filename)
+                    if media.content_type.startswith("image"):
 
             
-        print("got through image content")
-        # if there is something in the video input field
-        if video_content and allowed_file(video_content.filename):
-            print("start of video content")
-            # Create a filename, path for the upload and save the video
-            filename = secure_filename(video_content.filename)
-            purepath = f"{app.config['UPLOAD_FOLDER']}/user_{userID}/videos/{filename}"
-            video_content.save(purepath)
+                        purepath = f"{app.config['UPLOAD_FOLDER']}/user_{userID}/images/{filename}"
+                        media.save(purepath)
 
-            # Change type to string to query into database
-            purepath = str(purepath)
+                        # Change type to string to query into database
+                        purepath = str(purepath)
 
-             # Query video into video table and get id
-            videos_id = db.execute("INSERT INTO videos (filename, path, type, user_id) VALUES(?, ?, ?, ?)", filename,  purepath, "video", userID)
-        
-        print("got through video content")
+                        # Query image into database and get id
+                        images_id = db.execute("INSERT INTO images (filename, path, type, user_id) VALUES(?, ?, ?, ?)", filename, purepath, "image", userID)
+                        images_id_list.append(images_id)
+                    elif media.content_type.startswith("video"):
+            
+            
+                        # Create a filename, path for the upload and save the video
+                
+                        purepath = f"{app.config['UPLOAD_FOLDER']}/user_{userID}/videos/{filename}"
+                        media.save(purepath)
+
+                        # Change type to string to query into database
+                        purepath = str(purepath)
+
+                        # Query video into video table and get id
+                        videos_id = db.execute("INSERT INTO videos (filename, path, type, user_id) VALUES(?, ?, ?, ?)", filename,  purepath, "video", userID)
+                        videos_id_list.append(videos_id)
         # If there is any text content
         if text_content:
             print("start of text content")
@@ -261,10 +244,12 @@ def home():
 
         # Update the content columns of the post
         posts_id = db.execute("INSERT INTO posts (datetime, user_id) VALUES (?, ?)",time, userID)
-        if images_id:
-            db.execute("UPDATE posts SET image_id = ? WHERE id = ?", images_id, posts_id)
-        if videos_id:
-            db.execute("UPDATE posts SET video_id = ? WHERE id = ?", videos_id, posts_id)
+        if images_id_list:
+            all_images = stringify(images_id_list)
+            db.execute("UPDATE posts SET image_id = ? WHERE id = ?", all_images, posts_id)
+        if videos_id_list:
+            all_videos = stringify(videos_id_list)
+            db.execute("UPDATE posts SET video_id = ? WHERE id = ?", all_videos, posts_id)
         if stories_id:
             db.execute("UPDATE posts SET stories_id = ? WHERE id = ?", stories_id, posts_id)
 
@@ -288,16 +273,17 @@ def home():
     
         # Get all posts from user's friends    
         friends = listify(friendsRow[0]["friends"])
-        posts = []
-        for friend in friends:
-            posts.append(getPosts(friend))
-        
-        # Get information from user
+        posts = getPosts(friends)
 
         # return the home template with posts arguement
         return render_template("home.html",posts=posts,notifications=notifications)
 
 
+@app.route("/search")
+@login_required
+def search():
+    users = db.execute("SELECT * FROM users WHERE name LIKE ?","%" + request.args.get("q") + "%")
+    return render_template("search.html", users=users)
 
 @app.route("/profile/<profile_page>/photos", methods=["GET"])
 @login_required
@@ -456,6 +442,6 @@ def userProfile(profile_page):
         profileData = getAllData(profileRow, db.execute("SELECT * FROM friends WHERE user_id = ?", profileID))
         print(profileData["pic"])
         # Get all posts from profile
-        posts = getPosts(profileID)
+        posts = getPosts(str(profileID))
 
         return render_template("profile.html",profileData=profileData, posts=posts)
