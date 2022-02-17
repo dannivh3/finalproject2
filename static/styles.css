@@ -33,10 +33,7 @@ textarea:focus {
     z-index: -1;
     cursor: pointer;
 }
-.wrapper{
-    overflow-x:hidden;
-    position:relative
-}
+
 body{
     background:#dcdcdc;
 }
@@ -180,22 +177,7 @@ body{
        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.08);
    }
    
-   .panel-heading {
-       color: #393939;
-       padding: 10px 20px;
-       border-width: 0;
-       border-radius: 0;
-   }
-   
-   .panel-heading:after,
-   .panel-heading:before {
-       content: " ";
-       display: table;
-   }
-   
-   .panel-heading:after {
-       clear: both;
-   }
+  
    
    .panel-title {
        float: left;
@@ -263,56 +245,11 @@ body{
        content: "\f106";
    }
    
-   .panel-heading .dropdown {
-       float: right;
-   }
    
-   .panel-heading .dropdown .dropdown-toggle {
-       margin: -10px -20px;
-       padding: 10px 20px;
-       color: #999;
-       border-width: 0;
-       font-size: 14px;
-       line-height: 30px;
-       cursor: pointer;
-   }
    
-   .panel-heading .dropdown .dropdown-toggle:after,
-   .toolbar__nav > li > a > span {
-       display: none;
-   }
    
-   .panel-heading .dropdown-menu {
-       top: 30px !important;
-       left: auto !important;
-       right: -20px;
-       margin: 0;
-       padding: 10px 0;
-       border-width: 0;
-       border-radius: 4px 0 0 4px;
-       box-shadow: 0 1px 5px rgba(0, 0, 0, 0.08);
-       -webkit-transform: none !important;
-       transform: none !important;
-       z-index: 1001;
-   }
    
-   .panel-heading .dropdown-menu a {
-       padding: 5px 15px;
-       color: #999;
-       font-size: 13px;
-       line-height: 23px;
-   }
    
-   .panel-heading .dropdown-menu a:hover {
-       color: #e16123;
-   }
-   
-   .panel-heading .dropdown-menu i {
-       min-width: 15px;
-       margin-right: 6px;
-       font-size: 11px;
-       text-align: center;
-   }
    
    .panel-subtitle {
        margin: 20px 0;
@@ -374,20 +311,10 @@ body{
        z-index: 0;
    }
    
-   .panel-heading + .panel-social {
-       padding-top: 21px;
-       border-top: 1px solid #eee;
-   }
+
+
    
-   .panel-social > .nav {
-       -ms-flex-pack: center;
-       -webkit-box-pack: center;
-       justify-content: center;
-   }
-   
-   .panel-social > .nav > li:not(:last-child) {
-       margin-right: 20px;
-   }
+ 
    
    .panel-social > .nav > li > a {
        color: #ccc;
@@ -1474,9 +1401,27 @@ select.form-control:not([size]):not([multiple]) {
 .text-danger, .text-red {
     color: #ff5b57!important;
 }
+/* all used css */
 
+.panel-heading {
+    color: #393939;
+    padding: 10px 20px;
+    border-width: 0;
+    border-radius: 0;
+}
+
+.panel-heading:after,
+.panel-heading:before {
+    content: " ";
+    display: table;
+}
+
+.panel-heading:after {
+    clear: both;
+}
 
 /*All css below i made myself*/
+
 .white-box{
     background-color: white;
     border-radius: 20px;
@@ -1562,3 +1507,8 @@ input[type="radio"]:checked + label {
     background-color: white;
     padding:5px;
 }
+.wrapper{
+    overflow-x:hidden;
+    position:relative
+}
+
