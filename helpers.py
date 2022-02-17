@@ -55,53 +55,66 @@ def textFilter(data):
     type = data[0]["type"]
     return [type,text]
 
-def getPosts(id):
+def getPosts(friends):
     
     db = SQL("sqlite:///finalproject2.db")
-    allPosts = db.execute(f"SELECT * FROM posts WHERE user_id = ? ORDER BY datetime DESC", id)
-        # Iterating through all the posts that user can see To gather info
-    posts = []
-    for post in allPosts:
-                
-        # Clear these variables otherwise they will bring up wrong data
-        postData = {}
-        mediaData = ["",""]
-        textData = ["",""]
     
-        # Get information of post
-        name = db.execute("SELECT name FROM users WHERE id = ?", post["user_id"])
-        profile = db.execute("SELECT profile_pic FROM users WHERE id = ?", post["user_id"])
-        likes = post["likes"]
-        comments = post["comments"]
-        date = post["datetime"]
+    # Iterating through all the posts that user can see To gather info
+    posts = []
+    for friend in friends:
+        allPosts = db.execute(f"SELECT * FROM posts WHERE user_id = ? ORDER BY datetime DESC", friend)
+        for post in allPosts:
+                    
+            # Clear these variables otherwise they will bring up wrong data
+            postData = {}
+            mediaData = []
+            textData = ["",""]
         
-        # The website will only display eather 1 video or 1 image with or without text
-        # These statements will get the media file from the path collumn if there is one
-        if post["video_id"] != None:
-            mediaData = mediaFilter(db.execute("SELECT path,type FROM videos WHERE id = ?", post["video_id"]))
-        if post["image_id"] != None:
-            mediaData = mediaFilter(db.execute("SELECT path,type FROM images WHERE id = ?", post["image_id"]))
+            # Get information of post
+            name = db.execute("SELECT name FROM users WHERE id = ?", post["user_id"])
+            profile = db.execute("SELECT profile_pic FROM users WHERE id = ?", post["user_id"])
+            likes = post["likes"]
+            comments = post["comments"]
+            date = post["datetime"]
             
-        # This statement will get the text file if there is one
-        if post["stories_id"] != None:
-            textData = textFilter(db.execute("SELECT path,type FROM stories WHERE id = ?", post["stories_id"]))
+            # The website will only display eather 1 video or 1 image with or without text
+            # These statements will get the media file from the path collumn if there is one
+            if post["video_id"] != None:
+                all_videos = listify(str(post["video_id"]))
+                videoData = []
+                for video in all_videos:
+                    data = mediaFilter(db.execute("SELECT path,type FROM videos WHERE id = ?", video))
+                    videoData.append(data)
+                mediaData = videoData
+            if post["image_id"] != None:
+                all_images = listify(str(post["image_id"]))
+                imageData = []
+                for image in all_images:
+                    data = mediaFilter(db.execute("SELECT path,type FROM images WHERE id = ?", image))
+                    imageData.append(data)
+                mediaData = imageData
+            # This statement will get the text file if there is one
+            if post["stories_id"] != None:
+                textData = textFilter(db.execute("SELECT path,type FROM stories WHERE id = ?", post["stories_id"]))
+            print("mediaData",mediaData)
+            # Set up dict with all the data neccesery
+            postData =  {
+                "name": name[0]["name"],
+                "pic": profile[0]["profile_pic"],
+                "likes": likes,
+                "comments": comments,
+                "date": date,
+                "media": mediaData,
+                "texttype": textData[0],
+                "text": textData[1]
+            }
+            # after each iteration append the data to posts
+            posts.append(postData)
+    for post in posts:
+        for media in post["media"]:
+            print(media[0])
 
-        # Set up dict with all the data neccesery
-        postData =  {
-            "name": name[0]["name"],
-            "pic": profile[0]["profile_pic"],
-            "likes": likes,
-            "comments": comments,
-            "date": date,
-            "type": mediaData[0],
-            "path": mediaData[1],
-            "texttype": textData[0],
-            "text": textData[1]
-        }
-        # after each iteration append the data to posts
-        posts.append(postData)
-
-        return posts
+    return posts
 
 def getAllData(user,friend):
     # Put friends and pending friends of user into list
