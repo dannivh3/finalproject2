@@ -1,6 +1,6 @@
 -- SQLite
-DROP TABLE images;
-CREATE TABLE images(
+DROP TABLE stories;
+CREATE TABLE stories(
     id INTEGER PRIMARY KEY,
     filename TEXT NOT NULL,
     path TEXT NOT NULL,

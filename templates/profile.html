@@ -15,28 +15,28 @@
         </div>
         <div class="activity__list__body entry-content">
           <ul class="gallery">
-
-            {% if post["type"] == "image"%}
+            {% for media in post["media"] %}
+            {% if media[0] == "image"%}
 
             <li>
-              <img src="{{ url_for('static', filename=post['path']) }}" alt="" />
+              <img src="{{ url_for('static', filename=media[1]) }}" alt="" />
             </li>
 
             {% endif %} 
-            {% if post["type"] == "video" %}
+            {% if media[0] == "video" %}
 
             <li>
               <video class="res-video" controls width="400" alt="" preload="metadata" >
-                <source src="{{  url_for('static',filename=post['path']) }}" type="video/mp4" />
+                <source src="{{  url_for('static',filename=media[1]) }}" type="video/mp4" />
               </video>
             </li>
 
             {% endif %}
-
+            {% endfor %}
           </ul>
           <div class="timeline-content">
             <p class="m-4 ms-0 p-2 text-break">
-
+              
             {% if post['texttype'] %}
 
               <em>{{ post["text"] }}</em>

@@ -17,49 +17,18 @@
             </div>
             <div class="panel-content panel-activity">
                 <div class="p-4 profile-content white-box">
-                    <form action="/home" method="POST" class="panel-activity__status" enctype="multipart/form-data">
-                        <textarea name="text" placeholder="Share what you've been up to..."
-                            class="form-control scrollbar-hide"
-                            oninput='this.style.height = "";this.style.height = this.scrollHeight + "px"'></textarea>
-                        <div class="d-flex justify-content-center m-auto p-auto">
-                            <h3 class="panel-title">Media</h3>
-                        </div>
-                        <div class="d-flex justify-content-center my-2 p-2">
-
-                            <p id="mediaPlayer" class="border border-2 rounded-3 p-2">
-                                <img id="output" width="300" />
-                            </p>
-
-
-                            <p class="border border-2 rounded-3 p-2 mt-0">
-                                <video id="video-output" width="300" controls preload="metadata" >
-                                    Your browser does not support the video tag.
-                                </video>
-                            </p>
-
-                        </div>
-                        <div class="actions">
-                            <div class="btn-group">
-                                <label for="upload-image" type="button" class="btn-link" title="" data-toggle="tooltip"
-                                    data-original-title="Post an Image">
-                                    <i class="fa fa-image"><input id="upload-image" name="image" type="file"
-                                            accept="image/*" onchange="loadFile(event)" /></i>
-
-                                </label>
-
-                                <label for="upload-video" type="button" class="btn-link" title="" data-toggle="tooltip"
-                                    data-original-title="Post an Video">
-                                    <i class="fa fa-video-camera"><input id="upload-video" name="video" type="file"
-                                            accept="video/*" onchange="loadVideo(event)" /></i>
-
-                                </label>
-
+                    <div class="d-flex">
+                        <div class="d-flex">
+                            <div class="feed-profile-img">
+                                <a href="/profile/{{ userData['page'] }}"><img
+                                        src="{{ url_for('static',filename=userData['pic']) }}" alt="" /></a>
                             </div>
-                            <button type="submit" class="btn btn-sm btn-rounded btn-info">
-                                Post
-                            </button>
                         </div>
-                    </form>
+                        <div class="flex-grow-1 d-grid">
+                            <button name="text" class="rounded-pill border post-text" data-bs-toggle="modal"
+                                data-bs-target="#exampleModal">Share what's been on your mind...</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="profile-content">
 
@@ -71,34 +40,36 @@
 
                             <li class="white-box p-4">
                                 <div class="activity__list__header">
-                                    <img src="{{ post['pic'] }}" alt="" />
+                                    <img src="{{ url_for('static',filename=post['pic'][6:]) }}" alt="" />
                                     <a href="/profile/{{ post['page'] }}">{{ post["name"] }}</a> Posted
                                 </div>
                                 <div class="activity__list__body entry-content">
 
                                     <ul class="gallery">
-
-                                        {% if post["type"] == "image"%}
+                                    {% for media in post["media"] %}
+                                        {% if media[0] == "image"%}
 
                                         <li>
-                                            <img src="{{ post['path'] }}" alt="" />
+                                            <img src="{{ url_for('static', filename=media[1]) }}" alt="" />
                                         </li>
 
                                         {% endif %}
-                                        {% if post["type"] == "video" %}
+                                        {% if media[0] == "video" %}
 
                                         <li>
                                             <video class="res-video" controls width="400" alt="">
-                                                <source src="{{ post['path'] }}" type="video/mp4" preload="metadata" >
+                                                <source src="{{ url_for('static', filename=media[1]) }}"
+                                                    type="video/mp4" preload="metadata">
                                             </video>
                                         </li>
 
                                         {% endif %}
+                                    {% endfor %}
                                     </ul>
                                     <div class="timeline-content">
                                         <p class="m-4 ms-0 p-2 text-break">
 
-                                            {% if post['texttype'] %}
+                                            {% if post['texttype'] == "story" %}
 
                                             {{ post["text"] }}</em>
 
@@ -114,6 +85,7 @@
                                     <span> <i class="fa fa-clock"></i>{{ post["date"] }}</span>
                                 </div>
                             </li>
+                            
                             {% endfor %}
                             {% endif %}
 
@@ -128,5 +100,40 @@
 
     </div>
 
+</div>
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Post</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="/home" method="POST" class="panel-activity__status" enctype="multipart/form-data">
+                    <textarea name="text" focus placeholder="Share what you've been up to..."
+                        class="form-control scrollbar-hide"
+                        oninput='this.style.height = "";this.style.height = this.scrollHeight + "px"'></textarea>
+                    <div id="media-display">
+
+                    </div>
+                    <div class="actions">
+                        <div class="btn-group">
+                    
+                            <label for="media-upload" type="button" class="btn-link" title="" data-toggle="tooltip"
+                                data-original-title="Post Media">
+                                <i class="fa fa-image"><input id="media-upload" name="media" type="file" multiple accept=".jpg,.jpeg.,.gif,.png,.mov,.mp4" /></i>
+                    
+                            </label>
+                    
+                        </div>
+                        <input type="submit" class="btn btn-sm btn-rounded btn-info" value="Post"/>
+                         
+                    </div>
+
+            </div>
+            
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}
