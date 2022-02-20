@@ -174,85 +174,144 @@ def home():
     
 
     if request.method == "POST":
-        print("Text statement before")
-        # Few statements that check if there is something in the form
-        if request.form.get("text") != "":
-            print(" text before")
-            text_content = request.form.get("text")
-            print(" text after")
-        print("files: ", request.files.getlist("media"))
-        if request.files["media"]:
-            print(" image before")
-            media_content = request.files.getlist("media")
-            print(request.files["media"])
-            print(" image after")
         
-        # If there is nothing in all input fields it will return error
-        if media_content == None and text_content == None:
-            flash("There is nothing to post","danger")
-            return render_template("home.html")
-        print("got through nothing content")
-        if media_content != None:
-            for media in media_content:
-                if media and allowed_file(media.filename):
-                    filename = secure_filename(media.filename)
-                    if media.content_type.startswith("image"):
+         # IF like button pressed
+        if request.form.get("like"):
+            print("like:",request.form.get("like"))
+            likesTable = db.execute("SELECT * FROM likes WHERE posts_id = ?",request.form.get("like"))
+            likes = likesTable[0]["likes"]
+            whoLiked = likesTable[0]["who_liked"]
+            if whoLiked == None:
+                whoLiked = []
+            else:
+                whoLiked = listify(whoLiked)
+            print("whoLiked:",whoLiked)
+            print("userID:",userID)
+            if str(userID) not in whoLiked:
+                if likes == None:
+                    likes = 1
+                else:
+                    likes = int(likes)
+                    likes += 1
 
-            
-                        purepath = f"{app.config['UPLOAD_FOLDER']}/user_{userID}/images/{filename}"
-                        media.save(purepath)
-
-                        # Change type to string to query into database
-                        purepath = str(purepath)
-
-                        # Query image into database and get id
-                        images_id = db.execute("INSERT INTO images (filename, path, type, user_id) VALUES(?, ?, ?, ?)", filename, purepath, "image", userID)
-                        images_id_list.append(images_id)
-                    elif media.content_type.startswith("video"):
-            
-            
-                        # Create a filename, path for the upload and save the video
+                whoLiked.append(userID)
+                whoLiked = stringify(whoLiked)
+                db.execute("UPDATE likes SET likes = ? WHERE posts_id = ?", likes, request.form.get("like"))
+                db.execute("UPDATE likes SET who_liked = ? WHERE posts_id = ?",whoLiked, request.form.get("like"))
+            else:
                 
-                        purepath = f"{app.config['UPLOAD_FOLDER']}/user_{userID}/videos/{filename}"
-                        media.save(purepath)
+                likes = int(likes)
+                likes += -1
 
-                        # Change type to string to query into database
-                        purepath = str(purepath)
+                whoLiked.remove(str(userID))
+                whoLiked = stringify(whoLiked)
+                db.execute("UPDATE likes SET likes = ? WHERE posts_id = ?", likes, request.form.get("like"))
+                db.execute("UPDATE likes SET who_liked = ? WHERE posts_id = ?",whoLiked, request.form.get("like"))
+            return redirect("/home")
+        if request.form.get("comment"):
+            commentText = request.form.get("commentText")
+            posts_id = request.form.get("comment")
+            time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            db.execute("INSERT INTO comments (user_id, posts_id, datetime, comment) VALUES (?,?,?,?)",userID, int(posts_id), time, commentText)
 
-                        # Query video into video table and get id
-                        videos_id = db.execute("INSERT INTO videos (filename, path, type, user_id) VALUES(?, ?, ?, ?)", filename,  purepath, "video", userID)
-                        videos_id_list.append(videos_id)
-        # If there is any text content
-        if text_content:
-            print("start of text content")
-            # Create a filename and set the path for upload
-            filename = secure_filename(f"{text_content[0:20]}.txt")
-            purepath = f"{app.config['UPLOAD_FOLDER']}/user_{userID}/stories/{filename}"
+            return redirect("/home")
+        if request.form.get("post_content") == "Post":
+            print("Text statement before")
+            # Few statements that check if there is something in the form
+            if request.form.get("text") != "":
+                print(" text before")
+                text_content = request.form.get("text")
+                print(" text after")
+            print("files: ", request.files.getlist("media"))
+            if request.files["media"]:
+                print(" image before")
+                media_content = request.files.getlist("media")
+                print(request.files["media"])
+                print(" image after")
             
-            # Write text file
-            with open(purepath, 'w') as f:
-                f.write(text_content)
+            # If there is nothing in all input fields it will return error
+            if media_content == None and text_content == None:
+                flash("There is nothing to post","danger")
+                return render_template("home.html")
+            print("got through nothing content")
+            if media_content != None:
+                videoType = False
+                imageType = False
 
-            # Change type to string to query into database
-            purepath = str(purepath)
-            
-            # Query content into stories table and get id
-            stories_id = db.execute("INSERT INTO stories (filename, path, type, user_id) VALUES (?, ?, ?, ?)", filename, purepath, "story", userID)
+                for media in media_content:
+                    if media.content_type.startswith("image"):
+                        imageType = True
+                    elif media.content_type.startswith("video"):  
+                        videoType = True 
 
-        print("got through text content")
-        time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    if imageType == True and videoType == True:
+                        flash("You can either post Video or Images not both","danger")
+                        return redirect("/home")
+                        
 
-        # Update the content columns of the post
-        posts_id = db.execute("INSERT INTO posts (datetime, user_id) VALUES (?, ?)",time, userID)
-        if images_id_list:
-            all_images = stringify(images_id_list)
-            db.execute("UPDATE posts SET image_id = ? WHERE id = ?", all_images, posts_id)
-        if videos_id_list:
-            all_videos = stringify(videos_id_list)
-            db.execute("UPDATE posts SET video_id = ? WHERE id = ?", all_videos, posts_id)
-        if stories_id:
-            db.execute("UPDATE posts SET stories_id = ? WHERE id = ?", stories_id, posts_id)
+                        
+                for media in media_content:
+                    if media and allowed_file(media.filename):
+                        filename = secure_filename(media.filename)
+                        
+                        if media.content_type.startswith("image"):
+                            
+                            purepath = f"{app.config['UPLOAD_FOLDER']}/user_{userID}/images/{filename}"
+                            media.save(purepath)
 
+                            # Change type to string to query into database
+                            purepath = str(purepath)
+
+                            # Query image into database and get id
+                            images_id = db.execute("INSERT INTO images (filename, path, type, user_id) VALUES(?, ?, ?, ?)", filename, purepath, "image", userID)
+                            images_id_list.append(images_id)
+
+                        elif media.content_type.startswith("video"):
+                
+                            # Create a filename, path for the upload and save the video
+                    
+                            purepath = f"{app.config['UPLOAD_FOLDER']}/user_{userID}/videos/{filename}"
+                            media.save(purepath)
+
+                            # Change type to string to query into database
+                            purepath = str(purepath)
+
+                            # Query video into video table and get id
+                            videos_id = db.execute("INSERT INTO videos (filename, path, type, user_id) VALUES(?, ?, ?, ?)", filename,  purepath, "video", userID)
+                            videos_id_list.append(videos_id)
+            # If there is any text content
+            if text_content:
+                print("start of text content")
+                # Create a filename and set the path for upload
+                filename = secure_filename(f"{text_content[0:20]}.txt")
+                purepath = f"{app.config['UPLOAD_FOLDER']}/user_{userID}/stories/{filename}"
+                
+                # Write text file
+                with open(purepath, 'w') as f:
+                    f.write(text_content)
+
+                # Change type to string to query into database
+                purepath = str(purepath)
+                
+                # Query content into stories table and get id
+                stories_id = db.execute("INSERT INTO stories (filename, path, type, user_id) VALUES (?, ?, ?, ?)", filename, purepath, "story", userID)
+
+            print("got through text content")
+            time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+            # Update the content columns of the post
+            posts_id = db.execute("INSERT INTO posts (datetime, user_id) VALUES (?, ?)",time, userID)
+            db.execute("INSERT INTO likes (likes, posts_id) VALUES (?,?)",0,posts_id)
+            if images_id_list:
+                all_images = stringify(images_id_list)
+                db.execute("UPDATE posts SET image_id = ? WHERE id = ?", all_images, posts_id)
+            if videos_id_list:
+                all_videos = stringify(videos_id_list)
+                db.execute("UPDATE posts SET video_id = ? WHERE id = ?", all_videos, posts_id)
+            if stories_id:
+                db.execute("UPDATE posts SET stories_id = ? WHERE id = ?", stories_id, posts_id)
+
+       
 
         return redirect("/home")
     
@@ -272,7 +331,7 @@ def home():
             notifications.append(pendingData)
     
         # Get all posts from user's friends    
-        friends = listify(friendsRow[0]["friends"])
+        friends = friendsRow[0]["friends"]
         posts = getPosts(friends)
 
         # return the home template with posts arguement
@@ -397,6 +456,45 @@ def userProfile(profile_page):
     
     print(profile_page)
     if request.method == "POST":
+        if request.form.get("like"):
+            print("like:",request.form.get("like"))
+            likesTable = db.execute("SELECT * FROM likes WHERE posts_id = ?",request.form.get("like"))
+            likes = likesTable[0]["likes"]
+            whoLiked = likesTable[0]["who_liked"]
+            if whoLiked == None:
+                whoLiked = []
+            else:
+                whoLiked = listify(whoLiked)
+            print("whoLiked:",whoLiked)
+            print("userID:",userID)
+            if str(userID) not in whoLiked:
+                if likes == None:
+                    likes = 1
+                else:
+                    likes = int(likes)
+                    likes += 1
+
+                whoLiked.append(userID)
+                whoLiked = stringify(whoLiked)
+                db.execute("UPDATE likes SET likes = ? WHERE posts_id = ?", likes, request.form.get("like"))
+                db.execute("UPDATE likes SET who_liked = ? WHERE posts_id = ?",whoLiked, request.form.get("like"))
+            else:
+                
+                likes = int(likes)
+                likes += -1
+
+                whoLiked.remove(str(userID))
+                whoLiked = stringify(whoLiked)
+                db.execute("UPDATE likes SET likes = ? WHERE posts_id = ?", likes, request.form.get("like"))
+                db.execute("UPDATE likes SET who_liked = ? WHERE posts_id = ?",whoLiked, request.form.get("like"))
+            return redirect(f"/profile/{profile_page}/")
+        if request.form.get("comment"):
+            commentText = request.form.get("commentText")
+            posts_id = request.form.get("comment")
+            time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            db.execute("INSERT INTO comments (user_id, posts_id, datetime, comment) VALUES (?,?,?,?)",userID, int(posts_id), time, commentText)
+
+            return redirect(f"/profile/{profile_page}/")
         if request.form['friend_request'] == "Add Friend":
 
             # Selecting the session user's friends
@@ -445,3 +543,4 @@ def userProfile(profile_page):
         posts = getPosts(str(profileID))
 
         return render_template("profile.html",profileData=profileData, posts=posts)
+
