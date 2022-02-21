@@ -4,8 +4,8 @@
 <div class="userbox">
 {% for user in users %}
 
-    <li><a href="/profile/{{ user['profile_page'] }}"><img src="{{url_for('static',filename=user['profile_pic'][6:])}}" width="30"/>{{ user['name'] }}</a></li>
-    <hr>
+    <li class="no-count"><a href="/profile/{{ user['profile_page'] }}"><img src="{{url_for('static',filename=user['profile_pic'][6:])}}" width="30"/>{{ user['name'] }}</a></li>
+
 {% endfor %}
 </div>
 {% endblock %}

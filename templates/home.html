@@ -15,7 +15,7 @@
             <div class="panel-heading">
                 <h3 class="panel-title">Activity Feed</h3>
             </div>
-            <div class="panel-content panel-activity">
+            <div class="panel-activity">
                 <div class="p-4 profile-content white-box">
                     <div class="d-flex">
                         <div class="d-flex">
@@ -25,7 +25,7 @@
                             </div>
                         </div>
                         <div class="flex-grow-1 d-grid">
-                            <button name="text" class="rounded-pill border post-text" data-bs-toggle="modal"
+                            <button name="text" class="rounded-pill border post-text highlight" data-bs-toggle="modal"
                                 data-bs-target="#exampleModal">Share what's been on your mind...</button>
                         </div>
                     </div>
@@ -37,6 +37,8 @@
                         <ul class="panel-activity__list">
                             {% if posts %}
                             {% for post in posts %}
+                            {% set outer = loop %}
+  
 
                             <li class="white-box p-4">
                                 <div class="activity__list__header">
@@ -46,32 +48,70 @@
                                 <div class="activity__list__body entry-content">
 
                                     <ul class="gallery">
-                                    {% for media in post["media"] %}
-                                        {% if media[0] == "image"%}
+                    
+                                                {% if post['mediatype'] == "image" %}
+                                                    <div id="img{{loop.index}}" class="carousel slide" data-bs-interval="false" data-bs-wrap="true">
+                                                        <div class="carousel-indicators">
+                                                            {% for media in post['media'] %}
+                                                        
+                                                            {% if loop.first %}
+                                                                <button type="button" data-bs-target="#img{{outer.index}}" data-bs-slide-to="{{loop.index0}}" class="active" aria-current="true" aria-label="Slide {{loop.index}}"></button>
+                                                            {% else %}
+                                                                <button type="button" data-bs-target="#img{{outer.index}}" data-bs-slide-to="{{loop.index0}}"  aria-label="Slide {{loop.index}}"></button>
+                                                            {% endif %}
+                                                            {% endfor %}
+                                                          </div>
+                                                        <div class="carousel-inner">
+                                                    {% for media in post["media"] %}
 
-                                        <li>
-                                            <img src="{{ url_for('static', filename=media[1]) }}" alt="" />
-                                        </li>
+                                                        {% if loop.first %}
+                                                            <div class="carousel-item active">
+                                                                <img src="{{ url_for('static', filename=media) }}" class="d-block w-100" alt="...">
+                                                            </div>
+                                                        {% else %}
+                                                            <div class="carousel-item">
+                                                                <img src="{{ url_for('static', filename=media) }}" class="d-block w-100" alt="...">
+                                                            </div>
 
-                                        {% endif %}
-                                        {% if media[0] == "video" %}
+                                                        {% endif %}
+                                                    
+                                                    {% endfor %}
 
-                                        <li>
-                                            <video class="res-video" controls width="400" alt="">
-                                                <source src="{{ url_for('static', filename=media[1]) }}"
-                                                    type="video/mp4" preload="metadata">
-                                            </video>
-                                        </li>
+                                                        </div>
+                                                        <button class="carousel-control-prev" type="button" data-bs-target="#img{{loop.index}}" data-bs-slide="prev">
+                                                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                                            <span class="visually-hidden">Previous</span>
+                                                        </button>
+                                                        <button class="carousel-control-next" type="button" data-bs-target="#img{{loop.index}}" data-bs-slide="next">
+                                                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                                            <span class="visually-hidden">Next</span>
+                                                        </button>
+                                                    </div>
+                                              
+                                                {% endif %}
 
-                                        {% endif %}
-                                    {% endfor %}
+                                                {% if post['mediatype'] == "video" %}
+
+                                                {% for media in post["media"] %}
+
+                                                    <li>
+                                                        <video class="res-video" controls width="400" alt="">
+                                                            <source src="{{ url_for('static', filename=media) }}"
+                                                                type="video/mp4" preload="metadata">
+                                                        </video>
+                                                    </li>
+
+                                                {% endfor %}
+
+                                                {% endif %}                                
+                                         
                                     </ul>
                                     <div class="timeline-content">
                                         <p class="m-4 ms-0 p-2 text-break">
 
                                             {% if post['texttype'] == "story" %}
 
-                                            {{ post["text"] }}</em>
+                                            {{ post["text"] }}
 
                                             {% endif %}
 
@@ -80,10 +120,57 @@
 
                                 </div>
                                 <div class="activity__list__footer">
-                                    <a href="#"> <i class="fa fa-thumbs-up"></i>{{ post["likes"] }}</a>
-                                    <a href="#"> <i class="fa fa-comments"></i>{{ post["comments"] }}</a>
+                                    <form action="/home" method="post">
+                                        <label for="like-button{{loop.index}}" type="button" class="btn-link" title="" data-toggle="tooltip"
+                                            data-original-title="Like">
+                                            <i class="fa fa-thumbs-up"><input id="like-button{{loop.index}}"class="like-button" name="like" value="{{post['post_id']}}" type="submit" />{{ post["likes"] }}</i>
+                                        </label>
+                                    </form>
+                                    
+                                    <a href="#"> <i class="fa fa-comments" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample"></i>{{ post["comments"]|length }}</a>
+                                    <button class="btn btn-primary btn-sm seeall" type="button" data-bs-toggle="collapse" data-bs-target="#comment{{loop.index}}" aria-expanded="false" aria-controls="collapseExample">
+                                        Show
+                                    </button>
                                     <span> <i class="fa fa-clock"></i>{{ post["date"] }}</span>
+                                    
                                 </div>
+                                
+                            
+                                
+                                  
+                                <hr>
+                                
+                                <div class="collapse" id="comment{{loop.index}}">
+                                    {% for comment in post["comments"] %}
+                                <div class="activity__list__header">
+                                    <img src="{{ url_for('static',filename=comment['pic'][6:]) }}" alt="" />
+                                    <a href="/profile/{{ comment['page'] }}">{{ comment["name"] }}</a> Commented
+                                    <div class="timeline-content">
+                                        <p class="m-4 ms-0 p-2 text-break">
+
+
+                                            {{ comment["text"] }}
+
+
+                                        </p>
+                                    </div>
+                                    <div class="d-flex flex-row-reverse">
+                                        <span> <i class="fa fa-clock"></i>{{ comment["time"] }}</span>
+                                    </div>
+                                </div>
+                                <hr>
+                                    {% endfor %}
+                                </div>
+                                <form action="/home" method="POST" class="panel-activity__status">
+                                    <textarea name="commentText" focus placeholder="Comment on Post..."
+                                    class="form-control scrollbar-hide"
+                                    oninput='this.style.height = "";this.style.height = this.scrollHeight + "px"'></textarea>
+                                    <label for="comment-button{{loop.index}}" type="button" class="btn-link" title="" data-toggle="tooltip"
+                                            data-original-title="Comment">
+                                            <i class="fa btn btn-primary"><input id="comment-button{{loop.index}}" type="submit" name="comment" class="comment-button" value="{{post['post_id']}}"/>Comment</i>
+                                        </label>
+                                    
+                                </form>
                             </li>
                             
                             {% endfor %}
@@ -126,7 +213,7 @@
                             </label>
                     
                         </div>
-                        <input type="submit" class="btn btn-sm btn-rounded btn-info" value="Post"/>
+                        <input type="submit" name="post_content" class="btn btn-sm btn-rounded btn-info" value="Post"/>
                          
                     </div>
 

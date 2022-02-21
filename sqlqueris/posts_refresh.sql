@@ -3,8 +3,6 @@ DROP TABLE posts;
 CREATE TABLE posts(
     id INTEGER PRIMARY KEY,
     datetime TEXT NOT NULL,
-    likes INTEGER,
-    comments INTEGER,
     video_id TEXT,
     image_id TEXT,
     stories_id INTEGER,
@@ -12,6 +10,4 @@ CREATE TABLE posts(
         FOREIGN KEY (user_id)
             REFERENCES users(id),
         FOREIGN KEY (stories_id)
-            REFERENCES stories(id)
-
-            );
+            REFERENCES stories(id));
