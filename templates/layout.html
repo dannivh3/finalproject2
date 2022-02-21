@@ -37,12 +37,16 @@
                 {% if session["user_id"] %}
 
                     <ul> 
-                        <li class="no-count">
+                        <li class="profile-link">
                             <a class="navbar-brand ps-2" href="/profile/{{userData['page']}}">Profile</a>
                         </li>
                     </ul>
-                    <ul>
-                        <input id="search" autocomplete="off" placeholder="Search" type="search"/>
+                    <ul class="fix-media">
+                        
+                        <i class="fa fa-search"></i>
+                            <input id="search" autocomplete="off" placeholder="Search" type="search"/>
+                        
+                    
                         <ul id="userlist">
                             {% block search %}
                             {% endblock %}
@@ -56,18 +60,17 @@
 
                                 {% if notification %}
                                     <button type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <ul></ul>
-                                    Notifications
+                                        <li class="fa fa-bell" style="color:red;"></li>
                                     </button>
                                 {% else %}
 
-                                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Notifications
+                                <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <li class="fa fa-bell" style="color:green;"></li>
                                 </button>
                                 {% endif %}
                                 <ul class="dropdown-menu">
                                 {% for noti in notifications %}
-                                  <li><a class="dropdown-item" href="/profile/{{ noti['page'] }}"><img src="{{url_for('static',filename=noti['pic'])}}" width="30"/>{{ noti['name'] }}</a></li>
+                                  <li><a class="dropdown-item baba" href="/profile/{{ noti['page'] }}"><img src="{{url_for('static',filename=noti['pic'])}}" width="30"/>{{ noti['name'] }}</a></li>
                                 {% endfor %}
                                   
                                 </ul>

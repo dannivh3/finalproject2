@@ -341,7 +341,10 @@ def home():
 @app.route("/search")
 @login_required
 def search():
-    users = db.execute("SELECT * FROM users WHERE name LIKE ?","%" + request.args.get("q") + "%")
+    if request.args.get("q") == "":
+        users = ""
+    else:
+        users = db.execute("SELECT * FROM users WHERE name LIKE ?","%" + request.args.get("q") + "%")
     return render_template("search.html", users=users)
 
 @app.route("/profile/<profile_page>/photos", methods=["GET"])

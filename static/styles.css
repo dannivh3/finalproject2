@@ -12,6 +12,9 @@
 .scrollbar-hide{
     overflow: hidden;
 }
+#search{
+    border-radius:5px;
+}
 textarea{
     resize: none;
 }
@@ -54,9 +57,20 @@ body{
             
        }
    }
-
+.profile-link{
+    list-style-type: none;
+    position:relative;
+    top:10px;
+}
 .no-count{
     list-style-type: none;
+    border: 1px solid black;
+    padding:5px;
+    margin:0px;
+    font-size:16px;
+}
+.no-count:hover{
+    background-color: rgb(228, 226, 226);
 }
 .profile-header .profile-header-tab>li.active>a,
 .profile-header .profile-header-tab>li>a.active {
@@ -277,12 +291,52 @@ body{
         font-size:10px;
     }
 }
-@media (max-width:400px){
+@media (max-width:450px){
     .profile-content{
         
         padding:2px;
     
-}
+    }
+    .seeall{
+        font-size:12px;
+        margin-right:10%;
+    }
+    .fix-media{
+        margin-bottom:0px;
+    }
+    #search{
+        width:100px;
+
+
+    }
+    a.navbar-brand{
+        margin-right:1px;
+    }
+    a.navbar-brand>img{
+        width:2rem;
+        height:2rem;
+    }
+    .h3{
+        content:"";
+        display:none;
+    }
+    .profile-link>a{
+        font-size:14px;
+        
+    }
+    .fa.fa-search{
+        display:none;
+    }
+    ul{
+        margin-left:5px;
+        margin-right:5px;
+        padding-left:5px;
+        padding-right:5px;
+        font-size:12px;
+    }
+    .dropdown-toggle{
+        font-size:12px;
+    }
 }
 .radio {
     opacity: 0;
@@ -353,12 +407,12 @@ input[type="radio"]:checked + label {
 #userlist a {
     color:black
 }
-#userlist li{
-    margin:5px;
-}
+
 .userbox{
     background-color: white;
-    padding:5px;
+    position:relative;
+    margin:0;
+
 }
 .wrapper{
     overflow-x:hidden;
