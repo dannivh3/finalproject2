@@ -10,6 +10,7 @@ from helpers import login_required, listify, addToString, removeFromString, getP
 from datetime import datetime
 
 
+
 # Create a paths
 PARENT = Path(__file__).parent.resolve()
 UPLOAD_FOLDER = "static/user_content" 
@@ -175,7 +176,7 @@ def home():
 
     if request.method == "POST":
         
-         # IF like button pressed
+         # If like button pressed
         if request.form.get("like"):
             print("like:",request.form.get("like"))
             likesTable = db.execute("SELECT * FROM likes WHERE posts_id = ?",request.form.get("like"))
@@ -208,6 +209,8 @@ def home():
                 db.execute("UPDATE likes SET likes = ? WHERE posts_id = ?", likes, request.form.get("like"))
                 db.execute("UPDATE likes SET who_liked = ? WHERE posts_id = ?",whoLiked, request.form.get("like"))
             return redirect("/home")
+
+        # If comment button is pressed 
         if request.form.get("comment"):
             commentText = request.form.get("commentText")
             posts_id = request.form.get("comment")
@@ -547,3 +550,6 @@ def userProfile(profile_page):
 
         return render_template("profile.html",profileData=profileData, posts=posts)
 
+
+if __name__ == '__main__':
+    app.run()

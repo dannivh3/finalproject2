@@ -12,8 +12,9 @@
               <h4>{{about['name']}}</h4>
               <h6 class="mb-0">Bio</h6>
               <p class="text-secondary mb-1">{{about['description']}}</p>
-              
+              <!-- Check if user owns the profilepage-->
               {% if userData['userID'] == profileData['userID'] %}
+              <!-- open Modal with pics -->
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#changeProfilePic">Change Profile Picture</button>
               {% endif %}
 
@@ -25,6 +26,7 @@
     </div>
 
 <div class="col-md-8">
+  <!-- if user owns profile you can edit settings -->
     {% if userData['userID'] == profileData['userID'] %}
     <div class="card mb-3">
       <div class="card-body">
@@ -113,6 +115,7 @@
 
       </div>
     </div>
+    <!-- If user doesnt own profile he can only see settings -->
     {% else %}
     <div class="card mb-3">
       <div class="card-body">
@@ -196,6 +199,7 @@
 
     </div>
     </div>
+    <!-- Modal for changing profile pic -->
     <div class="modal fade" id="changeProfilePic" tabindex="-1" aria-labelledby="changeProfilePic" aria-hidden="true">
         <div class="modal-dialog">
           <div class="modal-content">
@@ -208,6 +212,7 @@
                 
                     {% for p in profile_pics %}
                         <input type="radio" class="radio" name="profile" id="{{loop.index}}" value="{{p}}"/>
+                        <!-- Somehow this returns an error in code but works fine in browser -->
                         <label for="{{loop.index}}" class="label" style="background-image: url( {{url_for('static', filename=p) }} )">Example 1</label>
                     {% endfor %}
                     </div>
