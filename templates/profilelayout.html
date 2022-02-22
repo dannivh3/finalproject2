@@ -11,7 +11,7 @@
                     <div class="profile-header-cover"></div>
 
                     <div class="profile-header-content">
-
+                        <!-- Profile pic for profile page -->
                         <div class="profile-header-img">
                             <img src="{{ url_for('static',filename=profileData['pic']) }}" alt="Admin" class="rounded-circle" width="150"/>
                         </div>
@@ -20,6 +20,7 @@
                             <h4 class="m-t-10 m-b-5">{{profileData['name']}}</h4>
                             <p class="m-b-10">___________</p>
 
+                            <!-- Functions for detecting if profile page is friend -->
                             {% if userData['userID'] == profileData["userID"] %}
 
                                 <a href="/profile/{{ profileData['page'] }}/settings" class="btn btn-sm btn-info mb-2">Edit Profile</a>
@@ -43,6 +44,7 @@
                             {% endif %}
                         </div>
                     </div>
+                    <!-- Nav bar -->
                     <ul class="profile-header-tab nav nav-tabs">
                         <li class="nav-item"><a href="/profile/{{profileData['page']}}/" cla="ssnav-link active show" data-toggle="tab">POSTS</a></li>
                         <li class="nav-item"><a href="/profile/{{profileData['page']}}/settings" class="nav-link" data-toggle="tab">ABOUT</a></li>
